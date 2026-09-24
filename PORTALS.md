@@ -52,6 +52,12 @@ Students need an active subscription before their portal opens (parents, tutors,
 The student pays Rs. 200 to EasyPaisa **0344-0807888** and enters the Transaction ID. Admin → **Portal subscriptions** → check the TID in your EasyPaisa app → **Approve** (30 days) or **Reject**. Cash or free access: *Record cash / manual payment*.
 To switch this off, set `enabled: false` in `portal/js/school.js` → `SUBSCRIPTION`.
 
+## ID card QR verification
+
+- **No principal's signature — QR verification instead.** The back of every issued card carries a QR code. Anyone (a guard, a board exam centre, another institution) scans it with a phone camera and `verify.html` on the academy website shows **Valid / Expired / Cancelled / Not found** with the holder's photo, name, class or designation and validity. Each card gets a random 12-character code, so cards can't be looked up by guessing IDs.
+- **Re-issue** gives the card a new QR code and marks the old one **Cancelled** — so a lost or replaced card stops verifying. Cards issued before this feature show "Re-issue to add QR code" on the back; re-issue them from Admin → Students / Staff → Card.
+- Remember to re-publish `firestore.rules` after updating (it adds the public, read-one-only `cardVerify` collection).
+
 ## Files
 
 ```

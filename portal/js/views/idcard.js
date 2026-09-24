@@ -3,6 +3,7 @@ import * as store from "../store.js";
 import { SITE } from "../../../assets/js/config.js";
 import { ID_CARD, className, SESSION } from "../school.js";
 import { $, $$, esc, icon, card, pill, toast, field, options, fmtDate, today, initials } from "../ui.js";
+import qrcode from "../vendor/qrcode.js";
 
 /* edit: "self" = the student/staff member can fill it; "office" = only the academy office; "record" = comes from the main record */
 export const FIELDS = {
@@ -54,6 +55,18 @@ export function resizePhoto(file) {
   });
 }
 
+/* ---------------- Online verification (QR code instead of a principal's signature) ----------------
+   Issuing a card creates a public cardVerify/{code} record. The QR code on the back opens
+   verify.html?c=<code>, which shows the card holder's name, photo and whether the card is valid.
+   The code is random (not the student ID), so cards can't be looked up by guessing. */
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const newVerifyCode = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => CODE_CHARS[b % 32]).join("");
+export const verifyUrl = (code) => new URL(`../verify.html?c=${encodeURIComponent(code)}`, location.href).href;
+function qrSvg(text) {
+  const q = qrcode(0, "M"); q.addData(text); q.make();
+  return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true, alt: "QR code to verify this card online" });
+}
+
 /* ---------------- Card design ---------------- */
 const logo = "../assets/img/logo-light.svg";
 const photoBox = (r) => r.photo ? `<img class="idc__photo" src="${esc(r.photo)}" alt="">` : `<div class="idc__photo idc__photo--empty"><span>${esc(initials(r.name || "?"))}</span><small>Photo</small></div>`;
@@ -85,7 +98,12 @@ export function cardBack(kind, r) {
         <dt>Blood group</dt><dd>${esc(r.bloodGroup || "—")}</dd>
         <dt>Issued</dt><dd>${r.cardIssuedAt ? fmtDate(r.cardIssuedAt) : "Not issued yet"}</dd>
       </dl>
-      <div class="idc__sign"><span></span>Principal</div>
+      <div class="idc__verify">
+        ${r.verifyCode ? `<div class="idc__qr">${qrSvg(verifyUrl(r.verifyCode))}</div>` : `<div class="idc__qr idc__qr--empty">QR</div>`}
+        <div class="idc__verifytext"><b>Verify online</b>${r.verifyCode
+          ? `Scan with any phone camera to confirm this card on the academy website.<small>Code ${esc(r.verifyCode)}</small>`
+          : r.cardIssuedAt ? "Re-issue this card at the academy office to add its verification QR code." : "The verification QR code is added when the card is issued."}</div>
+      </div>
       <div class="idc__return"><b>If found, please return to:</b>${esc(SITE.address)}<br>${esc(SITE.phone)} · ${esc(SITE.email || SITE.website.replace(/^https?:\/\/(www\.)?/, ""))}</div>
     </div>
     <div class="idc__stripe"></div>
@@ -181,8 +199,20 @@ export function idCardPage(kind, { office = false, canIssue = true } = {}) {
         if (missing(kind, draft).length) { toast("Complete all details first", true); return; }
         const unsaved = FIELDS[kind].filter(canEdit).some((fl) => (draft[fl.key] ?? "") !== (rec[fl.key] ?? ""));
         if (unsaved) { toast("Save your details first", true); return; }
-        const patch = { cardNo: kind === "student" ? id : "EMP-" + id, cardIssuedAt: today(), cardValidUntil: kind === "student" ? ID_CARD.studentValidUntil : addYears(today(), ID_CARD.staffValidYears) };
-        await store.update(col, id, patch); Object.assign(rec, patch); Object.assign(draft, patch);
+        const patch = { cardNo: kind === "student" ? id : "EMP-" + id, cardIssuedAt: today(), cardValidUntil: kind === "student" ? ID_CARD.studentValidUntil : addYears(today(), ID_CARD.staffValidYears), verifyCode: newVerifyCode() };
+        const btn = $("#issue") || $("#reissue"); if (btn) btn.disabled = true;
+        try {
+          // public verification record first, then the card itself
+          await store.set("cardVerify", patch.verifyCode, {
+            kind, ref: id, cardNo: patch.cardNo, name: rec.name, photo: rec.photo || "",
+            ...(kind === "student" ? { fatherName: rec.fatherName || "", classId: rec.classId || "", rollNo: rec.rollNo ?? "" } : { designation: rec.designation || "" }),
+            issuedAt: patch.cardIssuedAt, validUntil: patch.cardValidUntil, status: "valid"
+          });
+          const oldCode = rec.verifyCode;
+          await store.update(col, id, patch); Object.assign(rec, patch); Object.assign(draft, patch);
+          // a re-issued card replaces the old one: its QR code now shows "cancelled"
+          if (oldCode) { try { await store.update("cardVerify", oldCode, { status: "revoked" }); } catch {} }
+        } catch (x) { toast(x.message || "Could not issue the card", true); if (btn) btn.disabled = false; return; }
         toast("Card issued!"); idCard({ el, user, params, title });
       };
       $("#issue")?.addEventListener("click", doIssue);

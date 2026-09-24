@@ -71,15 +71,37 @@ service cloud.firestore {
     }
     match /students/{sid} {
       allow read: if canSeeStudent(sid);
-      allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address', 'phone', 'cardNo', 'cardIssuedAt', 'cardValidUntil']));
+      allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address', 'phone', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']));
       allow update: if isStudent(sid) && resource.data.get('cardIssuedAt', '') == ''
-                    && cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address', 'cardNo', 'cardIssuedAt', 'cardValidUntil']);
+                    && cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']);
     }
     match /staff/{id} {
       allow read: if hasProfile();
-      allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone', 'joinDate', 'cardNo', 'cardIssuedAt', 'cardValidUntil']));
+      allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone', 'joinDate', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']));
       allow update: if isStaff() && me().linkId == id && resource.data.get('cardIssuedAt', '') == ''
-                    && cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone', 'cardNo', 'cardIssuedAt', 'cardValidUntil']);
+                    && cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']);
+    }
+    // ID-card verification: the QR code on the back of each card opens verify.html?c=<code>.
+    // Anyone can read ONE card by its random code; listing all cards is blocked.
+    match /cardVerify/{code} {
+      function sameStudent(d) {
+        let r = get(/databases/$(database)/documents/students/$(d.ref)).data;
+        return r.get('cardIssuedAt', '') == '' && d.name == r.name && d.photo == r.get('photo', '')
+            && d.classId == r.get('classId', '') && d.rollNo == r.get('rollNo', '');
+      }
+      function sameStaff(d) {
+        let r = get(/databases/$(database)/documents/staff/$(d.ref)).data;
+        return r.get('cardIssuedAt', '') == '' && d.name == r.name && d.photo == r.get('photo', '')
+            && d.designation == r.get('designation', '');
+      }
+      allow get: if true;
+      allow list: if false;
+      allow create: if code.size() == 12 && request.resource.data.status == 'valid' && (
+                       isOffice()
+                    || (request.resource.data.kind == 'student' && isStudent(request.resource.data.ref) && sameStudent(request.resource.data))
+                    || (request.resource.data.kind == 'staff' && isStaff() && me().linkId == request.resource.data.ref && sameStaff(request.resource.data)));
+      allow update: if isOffice() && onlyChanges(['status']) && request.resource.data.status in ['valid', 'revoked'];
+      allow delete: if isAdmin();
     }
     match /timetable/{classId} {
       allow read: if hasProfile();
