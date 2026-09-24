@@ -20,7 +20,7 @@ export const BANDS = {
   middle:  { label: "Class 6 – 8",        perSubject: 1000 },
   matric:  { label: "Matric (9 – 10)",    perSubject: 2500 },
   inter:   { label: "Intermediate",       perSubject: 3500 },
-  bs:      { label: "BS / University",    perSubject: 4000 },
+  bs:      { label: "BS / University",    perSubject: 5000 },
   course:  { label: "Computer courses" }
 };
 
@@ -79,7 +79,7 @@ export function feeLabel(st) {
   if (b.perSubject) { const n = studentSubjects(st).length; return `Tuition — ${n} subject${n === 1 ? "" : "s"} × ${rs(b.perSubject)}`; }
   return "Monthly package";
 }
-export const FEE_SUMMARY = "Play Group Rs. 1,000 package · Class 1–5 Rs. 500, Class 6–8 Rs. 1,000, Matric Rs. 2,500, Inter Rs. 3,500, BS Rs. 4,000 per subject · computer courses in monthly instalments";
+export const FEE_SUMMARY = "Play Group Rs. 1,000 package · Class 1–5 Rs. 500, Class 6–8 Rs. 1,000, Matric Rs. 2,500, Inter Rs. 3,500, BS Rs. 5,000 per subject · computer courses in monthly instalments";
 
 export const FEE_DUE_DAY = 10;
 export const LATE_FEE = 100;

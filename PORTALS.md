@@ -16,7 +16,7 @@ Built by Ijaz Software House · www.ijazs.online
 
 - **Classes:** Play Group, Class 1–10, 1st Year, 2nd Year, BS / BCS, and each computer course (Computer Basics, Scratch, MS Office, AI Tools, Graphic Design, Video Editing, Python, Web Development, Arduino, IoT, Freelancing, IT Diploma).
 - **Fees are subject-wise.** When you add a student you tick the subjects they take, and the monthly fee is worked out from that:
-  Play Group Rs. 1,000 package · Class 1–5 Rs. 500 · Class 6–8 Rs. 1,000 · Matric Rs. 2,500 · Intermediate Rs. 3,500 · BS Rs. 4,000 per subject.
+  Play Group Rs. 1,000 package · Class 1–5 Rs. 500 · Class 6–8 Rs. 1,000 · Matric Rs. 2,500 · Intermediate Rs. 3,500 · BS Rs. 5,000 per subject.
   Computer courses: the complete-course fee split into monthly instalments (e.g. Python Rs. 10,000 over 3 months).
 - **Slots:** 4:00–5:00, 5:00–6:00, 6:00–7:00, 7:00–8:00, Monday to Saturday.
 - Fee due on the 10th; late fee Rs. 100. Change any of these in `school.js`.
