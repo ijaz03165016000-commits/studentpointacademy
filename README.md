@@ -13,6 +13,7 @@ The website uses the same backend as the STARs College site: announcements, arti
 | `articles.html` | All articles, with category filters, search and a "Load more" button. |
 | `article.html?id=…` | A single article, with WhatsApp and Facebook share buttons and related articles. |
 | `admin/` | The admin panel (see below). |
+| `portal/` | **Student, Parent, Staff, Principal and Admin portals** — attendance, results, homework, timetable, fee challans, leave, messages. See `PORTALS.md`. |
 
 ### The forms
 

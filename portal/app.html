@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Portal | Student Point Academy</title>
+<meta name="theme-color" content="#2563EB">
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="portal.css">
+</head>
+<body class="portal">
+<a class="skip-link" href="#view">Skip to content</a>
+<div class="shell">
+  <aside class="side" id="side" aria-label="Portal menu">
+    <a class="side__brand" href="app.html#/home">
+      <img src="../assets/img/logo-light.svg" alt="" width="38" height="38">
+      <span><b>Student Point Academy</b><small id="side-role">Portal</small></span>
+    </a>
+    <nav class="side__nav" id="side-nav"></nav>
+    <div class="side__foot">
+      <a href="../index.html" target="_blank" rel="noopener">Visit academy website</a>
+      <button class="linkbtn" id="logout" type="button">Sign out</button>
+    </div>
+  </aside>
+  <div class="side-backdrop" id="side-backdrop"></div>
+
+  <div>
+    <header class="topbar2">
+      <button class="menu-btn" id="menu-btn" aria-controls="side" aria-expanded="false" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
+      <h1 id="page-title">Loading…</h1>
+      <a class="me" href="#/profile" id="me"></a>
+    </header>
+    <div id="demo-strip"></div>
+    <main class="view" id="view" tabindex="-1"><p class="loading">Loading your portal…</p></main>
+  </div>
+</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

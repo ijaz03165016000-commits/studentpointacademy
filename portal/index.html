@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Portal sign-in | Student Point Academy</title>
+<meta name="theme-color" content="#2563EB">
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="portal.css">
+</head>
+<body class="portal">
+<div class="auth">
+  <aside class="auth__aside">
+    <a class="auth__brand" href="../index.html">
+      <img src="../assets/img/logo-light.svg" alt="" width="44" height="44">
+      <span>Student Point Academy<small>Play Group to BS · Computer courses · Mirpur AJK</small></span>
+    </a>
+    <div>
+      <h1>One portal for the whole <em>Student Point</em> family.</h1>
+      <p style="margin-top:14px">Students, parents, tutors, the principal and the academy office — each with their own dashboard.</p>
+    </div>
+    <ul class="auth__feats">
+      <li><svg viewBox="0 0 24 24"><path d="M22 7h-9v2h9zm0 8h-9v2h9zM5.54 11 2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41z"/></svg>Daily attendance</li>
+      <li><svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>Results &amp; report cards</li>
+      <li><svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12z"/></svg>Homework diary</li>
+      <li><svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14z"/></svg>Timetable</li>
+      <li><svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>Fee challans</li>
+      <li><svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>Parent–teacher messages</li>
+    </ul>
+    <svg class="auth__stars" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 1 9l11 6 9-4.91V17h2V9zM5 13.18v4L12 21l7-3.82v-4L12 17z"/></svg>
+  </aside>
+
+  <main class="auth__main" id="main">
+    <div class="auth__card">
+      <h2>Sign in to your portal</h2>
+      <p class="muted" style="margin:0">Choose who you are, then enter the ID and password the academy gave you.</p>
+
+      <form class="auth__form" id="login" novalidate>
+        <fieldset class="roles">
+          <legend>I am a</legend>
+          <label class="role-opt"><input type="radio" name="role" value="student" checked><span><svg viewBox="0 0 24 24"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17zM12 3 1 9l11 6 9-4.91V17h2V9z"/></svg>Student</span></label>
+          <label class="role-opt"><input type="radio" name="role" value="parent"><span><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Parent</span></label>
+          <label class="role-opt"><input type="radio" name="role" value="staff"><span><svg viewBox="0 0 24 24"><path d="M20 17a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H9.46c.35.61.54 1.3.54 2h10v11h-9v2zM15 7v2H9v13H7v-6H5v6H3v-8H1.5V9a2 2 0 0 1 2-2zM8 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>Staff / Tutor</span></label>
+          <label class="role-opt"><input type="radio" name="role" value="principal"><span><svg viewBox="0 0 24 24"><path d="M5 16 3 5l5.5 5L12 4l3.5 6L21 5l-2 11zm14 3a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-1h14z"/></svg>Principal</span></label>
+          <label class="role-opt"><input type="radio" name="role" value="admin"><span><svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/></svg>Admin</span></label>
+        </fieldset>
+
+        <div class="field">
+          <label for="uid" id="uid-label">Student ID</label>
+          <input id="uid" name="uid" autocomplete="username" autocapitalize="characters" spellcheck="false" required placeholder="e.g. SPA-0101">
+        </div>
+        <div class="field">
+          <label for="pw">Password</label>
+          <div class="pw-wrap"><input id="pw" name="pw" type="password" autocomplete="current-password" required><button type="button" id="pw-toggle" aria-pressed="false">Show</button></div>
+        </div>
+        <div class="form-status" role="alert"></div>
+        <button class="btn btn--navy" type="submit" style="width:100%">Sign in</button>
+        <div id="demo"></div>
+        <p class="muted small" style="margin:0">Forgot your password? Contact the academy office on <a data-site="phone" href="tel:03440807888">0344-0807888</a>. · <a href="../index.html">Back to website</a></p>
+      </form>
+    </div>
+  </main>
+</div>
+<script type="module" src="js/login.js"></script>
+</body>
+</html>

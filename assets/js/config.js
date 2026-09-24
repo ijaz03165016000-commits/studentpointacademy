@@ -14,6 +14,8 @@ export const SITE = {
   whatsapp: "923440807888",        // international format, no + or dashes
   website: "https://www.studentpointacademy.online",
   address: "G1/Part 3, near MedBros Pharmacy, Haul Road, Mirpur AJK",
+  city: "Mirpur, Azad Kashmir",
+  email: "",                       // optional — shown on ID cards when filled in
   timings: "Mon–Sat, 4:00 PM – 8:00 PM"
 };
 
