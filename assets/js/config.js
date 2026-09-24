@@ -18,12 +18,12 @@ export const SITE = {
 };
 
 export const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBnLBxu3KvJJ4sr70wZRaW2xYBKGDBeCWo",
+  authDomain: "student-point-academy.firebaseapp.com",
+  projectId: "student-point-academy",
+  storageBucket: "student-point-academy.firebasestorage.app",
+  messagingSenderId: "581530226068",
+  appId: "1:581530226068:web:7c762c2feaad2b778d5381"
 };
 
 /* Article and announcement categories (used by the site and the admin panel) */
