@@ -1,0 +1,38 @@
+rules_version = '2';
+// Student Point Academy — Firestore security rules
+// Paste into Firebase console → Firestore Database → Rules → Publish.
+// Change ADMIN_EMAIL below to the email of the admin account you create
+// in Authentication → Users.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "admin@studentpointacademy.online";
+    }
+
+    // Articles: everyone reads published ones; only the admin writes.
+    match /articles/{id} {
+      allow read: if resource.data.status == "published" || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Announcements: public read, admin write.
+    match /announcements/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Form entries (demo bookings, fee receipts, join applications):
+    // visitors can only add one; only the admin can read, update or delete.
+    match /inquiries/{id} {
+      allow create: if request.resource.data.type in ["demo", "payment", "application"]
+                    && request.resource.data.studentName is string
+                    && request.resource.data.studentName.size() < 100
+                    && request.resource.data.phone is string
+                    && request.resource.data.phone.size() < 20
+                    && request.resource.data.contacted == false
+                    && request.resource.data.size() < 40;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

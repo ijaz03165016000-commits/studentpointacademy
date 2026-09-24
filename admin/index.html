@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin panel | Student Point Academy</title>
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+
+<!-- ===== Login ===== -->
+<section class="login" id="login-view" hidden>
+  <form class="login__card" id="login-form" novalidate>
+    <div class="login__logo">🎓</div>
+    <h1>Student Point Academy admin</h1>
+    <p class="muted">Sign in to manage announcements, articles, demo bookings, fee receipts and applications.</p>
+    <div id="login-demo"></div>
+    <div class="field"><label for="l-email">Email</label><input id="l-email" name="email" type="email" autocomplete="username" required></div>
+    <div class="field"><label for="l-pass">Password</label><input id="l-pass" name="password" type="password" autocomplete="current-password" required></div>
+    <div class="form-status" role="alert"></div>
+    <button class="btn btn-primary" type="submit" style="width:100%">Sign in</button>
+    <p class="muted small"><a href="../index.html">Back to the website</a></p>
+  </form>
+</section>
+
+<!-- ===== App ===== -->
+<div class="app" id="app-view" hidden>
+  <aside class="side">
+    <a class="side__brand" href="../index.html" target="_blank" rel="noopener">
+      <span class="side__logo">🎓</span><span>SPA Admin</span>
+    </a>
+    <nav class="side__nav" aria-label="Admin">
+      <button data-view="dashboard" aria-current="page">Dashboard</button>
+      <button data-view="articles">Articles</button>
+      <button data-view="announcements">Announcements</button>
+      <button data-view="inquiries">Form entries <span class="badge" id="new-count" hidden></span></button>
+    </nav>
+    <div class="side__foot">
+      <span class="small" id="who"></span>
+      <button class="linkbtn" id="logout">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div id="demo-banner"></div>
+
+    <!-- Dashboard -->
+    <section data-panel="dashboard">
+      <header class="main__head"><h1>Dashboard</h1><a class="btn btn-outline btn-sm" href="../index.html" target="_blank" rel="noopener">View website</a></header>
+      <div class="kpis">
+        <button class="kpi" data-go="articles"><span class="kpi__num" id="k-art">–</span><span>Published articles</span><span class="small muted" id="k-draft"></span></button>
+        <button class="kpi" data-go="announcements"><span class="kpi__num" id="k-ann">–</span><span>Active announcements</span><span class="small muted" id="k-exp"></span></button>
+        <button class="kpi" data-go="inquiries"><span class="kpi__num" id="k-inq">–</span><span>Form entries</span><span class="small muted" id="k-new"></span></button>
+      </div>
+      <div class="dash-actions">
+        <button class="btn btn-orange" data-new="article">Write an article</button>
+        <button class="btn btn-primary" data-new="announcement">Post an announcement</button>
+      </div>
+      <h2 class="h3">Latest form entries</h2>
+      <div id="dash-inq"></div>
+    </section>
+
+    <!-- Articles -->
+    <section data-panel="articles" hidden>
+      <header class="main__head"><h1>Articles</h1><button class="btn btn-orange btn-sm" data-new="article">New article</button></header>
+      <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody id="art-rows"></tbody>
+      </table></div>
+    </section>
+
+    <!-- Announcements -->
+    <section data-panel="announcements" hidden>
+      <header class="main__head"><h1>Announcements</h1><button class="btn btn-orange btn-sm" data-new="announcement">New announcement</button></header>
+      <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody id="ann-rows"></tbody>
+      </table></div>
+    </section>
+
+    <!-- Inquiries -->
+    <section data-panel="inquiries" hidden>
+      <header class="main__head"><h1>Form entries</h1><button class="btn btn-outline btn-sm" id="csv">Export to CSV</button></header>
+      <div class="filter-chips" id="inq-filter" style="margin-bottom:16px">
+        <button type="button" aria-pressed="true" data-f="all">All</button>
+        <button type="button" aria-pressed="false" data-f="new">Not handled</button>
+        <button type="button" aria-pressed="false" data-f="demo">Demo bookings</button>
+        <button type="button" aria-pressed="false" data-f="payment">Fee payments</button>
+        <button type="button" aria-pressed="false" data-f="application">Join applications</button>
+      </div>
+      <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>Received</th><th>Name</th><th>Phone</th><th>Details</th><th>Message / file</th><th>Handled</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody id="inq-rows"></tbody>
+      </table></div>
+    </section>
+
+    <!-- Article editor -->
+    <section data-panel="article-edit" hidden>
+      <header class="main__head"><h1 id="ae-title">New article</h1><button class="btn btn-outline btn-sm" data-back="articles">Back to articles</button></header>
+      <form class="editor" id="article-form" novalidate>
+        <div class="editor__main">
+          <div class="field"><label for="a-title">Title</label><input id="a-title" name="title" required maxlength="140"><p class="field__error">Enter a title.</p></div>
+          <div class="field"><label for="a-excerpt">Short summary <span class="opt">(shown on article cards)</span></label><textarea id="a-excerpt" name="excerpt" rows="2" maxlength="220" style="min-height:0"></textarea></div>
+          <div class="field">
+            <label id="rte-label">Article text</label>
+            <div class="rte-bar" role="toolbar" aria-label="Formatting">
+              <button type="button" data-cmd="formatBlock" data-val="H2" title="Heading">H2</button>
+              <button type="button" data-cmd="formatBlock" data-val="H3" title="Sub-heading">H3</button>
+              <button type="button" data-cmd="formatBlock" data-val="P" title="Paragraph">¶</button>
+              <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+              <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+              <button type="button" data-cmd="insertUnorderedList" title="Bullet list">• List</button>
+              <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+              <button type="button" data-cmd="formatBlock" data-val="BLOCKQUOTE" title="Quote">“ Quote</button>
+              <button type="button" data-cmd="link" title="Add link">Link</button>
+              <button type="button" data-cmd="image" title="Insert image">Image</button>
+              <button type="button" data-cmd="removeFormat" title="Clear formatting">Clear</button>
+            </div>
+            <div class="rte prose" id="a-content" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="rte-label"></div>
+            <p class="field__error">Write the article text.</p>
+            <input type="file" id="rte-img" accept="image/*" hidden>
+          </div>
+        </div>
+        <div class="editor__side">
+          <div class="card">
+            <div class="field"><label for="a-status">Status</label>
+              <select id="a-status" name="status"><option value="published">Published</option><option value="draft">Draft</option></select></div>
+            <div class="field"><label for="a-cat">Category</label><select id="a-cat" name="category"></select></div>
+            <div class="field"><label for="a-author">Author</label><input id="a-author" name="author" placeholder="Student Point Academy"></div>
+            <div class="field"><label for="a-date">Date</label><input id="a-date" name="date" type="date" required></div>
+            <div class="field">
+              <label for="a-cover">Cover image</label>
+              <img class="cover-prev" id="a-cover-prev" alt="" hidden>
+              <input id="a-cover" type="file" accept="image/*">
+              <button type="button" class="linkbtn" id="a-cover-remove" hidden>Remove cover</button>
+              <p class="field__hint">Wide image (1280×720) works best. Max 5 MB.</p>
+            </div>
+            <div class="form-status" role="status" aria-live="polite"></div>
+            <button class="btn btn-orange" type="submit" style="width:100%">Save article</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- Announcement editor -->
+    <section data-panel="announcement-edit" hidden>
+      <header class="main__head"><h1 id="ne-title">New announcement</h1><button class="btn btn-outline btn-sm" data-back="announcements">Back to announcements</button></header>
+      <form class="form form-panel" id="ann-form" novalidate style="max-width:760px">
+        <div class="field full"><label for="n-title">Title</label><input id="n-title" name="title" required maxlength="140"><p class="field__error">Enter a title.</p></div>
+        <div class="field"><label for="n-cat">Category</label><select id="n-cat" name="category"></select></div>
+        <div class="field"><label for="n-date">Date</label><input id="n-date" name="date" type="date" required></div>
+        <div class="field full"><label for="n-desc">Description</label><textarea id="n-desc" name="description" required maxlength="600"></textarea><p class="field__error">Write a short description.</p></div>
+        <div class="field"><label for="n-exp">Hide after <span class="opt">(optional)</span></label><input id="n-exp" name="expires" type="date"><p class="field__hint">The notice disappears from the website after this date.</p><p class="field__error">The hide date must be on or after the notice date.</p></div>
+        <div class="field">
+          <label for="n-file">Attachment <span class="opt">(PDF or image)</span></label>
+          <input id="n-file" type="file" accept="application/pdf,image/*">
+          <p class="field__hint" id="n-file-cur"></p>
+          <button type="button" class="linkbtn" id="n-file-remove" hidden>Remove attachment</button>
+        </div>
+        <div class="full checks">
+          <label class="check"><input type="checkbox" name="urgent"> <span><strong>Urgent</strong> — shown in red at the top of every list</span></label>
+          <label class="check"><input type="checkbox" name="pinned"> <span><strong>Pinned</strong> — kept above normal notices</span></label>
+        </div>
+        <div class="full"><div class="form-status" role="status" aria-live="polite"></div></div>
+        <div class="full"><button class="btn btn-orange" type="submit">Save announcement</button></div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="admin.js"></script>
+</body>
+</html>

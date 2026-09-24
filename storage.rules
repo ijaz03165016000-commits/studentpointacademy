@@ -1,0 +1,28 @@
+rules_version = '2';
+// Student Point Academy — Storage security rules
+// Paste into Firebase console → Storage → Rules → Publish.
+// Use the same admin email as in firestore.rules.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "admin@studentpointacademy.online";
+    }
+    function smallFile() { return request.resource.size < 5 * 1024 * 1024; }
+
+    // Images/PDFs the admin adds to articles and announcements: public read.
+    match /covers/{f}          { allow read: if true; allow write: if isAdmin() && smallFile(); }
+    match /article-images/{f}  { allow read: if true; allow write: if isAdmin() && smallFile(); }
+    match /attachments/{f}     { allow read: if true; allow write: if isAdmin() && smallFile(); }
+
+    // Fee receipts and CVs uploaded by visitors: they can upload, only the admin can open.
+    match /receipts/{f} {
+      allow create: if smallFile() && request.resource.contentType.matches('image/.*|application/pdf');
+      allow read, delete: if isAdmin();
+    }
+    match /cvs/{f} {
+      allow create: if smallFile() && request.resource.contentType.matches('image/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      allow read, delete: if isAdmin();
+    }
+  }
+}
