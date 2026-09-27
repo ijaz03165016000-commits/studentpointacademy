@@ -23,7 +23,8 @@ export const BANDS = {
   matric:  { label: "Matric (9 – 10)",    perSubject: 2500 },
   inter:   { label: "Intermediate",       perSubject: 3500 },
   bs:      { label: "BS / University",    perSubject: 5000 },
-  intl:    { label: "GCSE / O & A Level", perSubject: 0 },      // tuition fee per subject — set it here (0 = not charged on challans yet)
+  olevel:  { label: "GCSE / O Level",     perSubject: 10000 },
+  alevel:  { label: "A Level",            perSubject: 15000 },
   course:  { label: "Computer courses" }
 };
 
@@ -39,8 +40,8 @@ export const CLASSES = [
   { id: "10", level: 10, band: "matric", name: "Class 10 (Matric)", short: "10", subjects: MATRIC },
   { id: "11", level: 11, band: "inter", name: "1st Year (FSc / ICS / I.Com)", short: "11", subjects: INTER },
   { id: "12", level: 12, band: "inter", name: "2nd Year (FSc / ICS / I.Com)", short: "12", subjects: INTER },
-  { id: "OL", level: 10, band: "intl", name: "GCSE / O Level (Cambridge)", short: "O-L", subjects: OLEVEL },
-  { id: "AL", level: 12, band: "intl", name: "A Level (AS / A2)", short: "A-L", subjects: ALEVEL },
+  { id: "OL", level: 10, band: "olevel", name: "GCSE / O Level (Cambridge)", short: "O-L", subjects: OLEVEL },
+  { id: "AL", level: 12, band: "alevel", name: "A Level (AS / A2)", short: "A-L", subjects: ALEVEL },
   { id: "BS", level: 13, band: "bs", name: "BS / BCS (University)", short: "BS", subjects: BS },
   course("CC-BASIC", "Computer Basics & Typing", 2500, 1),
   course("CC-SCRATCH", "Scratch Coding for Kids", 5000, 2),
@@ -84,7 +85,7 @@ export function feeLabel(st) {
   if (b.perSubject) { const n = studentSubjects(st).length; return `Tuition — ${n} subject${n === 1 ? "" : "s"} × ${rs(b.perSubject)}`; }
   return "Monthly package";
 }
-export const FEE_SUMMARY = "Play Group Rs. 1,000 package · Class 1–5 Rs. 500, Class 6–8 Rs. 1,000, Matric Rs. 2,500, Inter Rs. 3,500, BS Rs. 5,000 per subject · computer courses in monthly instalments";
+export const FEE_SUMMARY = "Play Group Rs. 1,000 package · Class 1–5 Rs. 500, Class 6–8 Rs. 1,000, Matric Rs. 2,500, Inter Rs. 3,500, GCSE / O Level Rs. 10,000, A Level Rs. 15,000, BS Rs. 5,000 per subject · computer courses in monthly instalments";
 
 export const FEE_DUE_DAY = 10;
 export const LATE_FEE = 100;
