@@ -78,7 +78,8 @@
     const revoked = c.status !== "valid";
     const expired = !revoked && c.validUntil && c.validUntil < todayIso;
     const student = c.kind === "student";
-    const head = revoked ? status("bad", "Card cancelled", "This card has been replaced or cancelled by the academy. Do not accept it.")
+    const head = c.status === "blocked" ? status("bad", "Card blocked", "The academy has blocked this card. Do not accept it — contact the academy office.")
+      : revoked ? status("bad", "Card cancelled", "This card has been replaced or cancelled by the academy. Do not accept it.")
       : expired ? status("bad", "Card expired", `This card was valid until ${fmt(c.validUntil)}.`)
       : status("ok", "Valid ID card", `Issued by ${esc(SITE.name)}, ${esc(SITE.city)}.`);
     const rows = student

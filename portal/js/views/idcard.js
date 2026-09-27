@@ -2,7 +2,7 @@
 import * as store from "../store.js";
 import { SITE } from "../../../assets/js/config.js";
 import { ID_CARD, className, SESSION } from "../school.js";
-import { $, $$, esc, icon, card, pill, toast, field, options, fmtDate, today, initials } from "../ui.js";
+import { $, $$, esc, icon, card, pill, toast, field, options, fmtDate, today, initials, dialog } from "../ui.js";
 import qrcode from "../vendor/qrcode.js";
 
 /* edit: "self" = the student/staff member can fill it; "office" = only the academy office; "record" = comes from the main record */
@@ -160,13 +160,15 @@ export function idCardPage(kind, { office = false, canIssue = true } = {}) {
         </div>
         <div>
           <section class="card2">
-            <div class="card2__head"><h3>${LABEL[kind]} preview</h3>${issued ? pill("Issued " + fmtDate(rec.cardIssuedAt, false), "green") : miss.length ? pill("Incomplete", "gold") : pill("Ready to issue", "green")}</div>
+            <div class="card2__head"><h3>${LABEL[kind]} preview</h3>${issued && rec.cardBlocked ? pill("Blocked", "red") : issued ? pill("Issued " + fmtDate(rec.cardIssuedAt, false), "green") : miss.length ? pill("Incomplete", "gold") : pill("Ready to issue", "green")}</div>
             <div class="idc-pair" id="cardPrint">${cardFront(kind, draft)}${cardBack(kind, draft)}</div>
             <div class="idc-actions">
               ${!issued && canIssue && office ? `<button class="btn btn--gold" id="issue"${miss.length ? " disabled" : ""}>${icon("star").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Issue card</button>` : ""}
-              ${issued ? `<button class="btn btn--navy" id="print">${icon("print").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Print / save as PDF</button>` : ""}
+              ${issued && (office || !rec.cardBlocked) ? `<button class="btn btn--navy" id="print">${icon("print").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Print / save as PDF</button>` : ""}
               ${issued && office ? `<button class="btn btn--outline btn--sm" id="reissue">Re-issue with current details</button>` : ""}
+              ${issued && office ? (rec.cardBlocked ? `<button class="btn btn--outline btn--sm" id="unblock">Unblock card</button>` : `<button class="btn btn--outline btn--sm linkbtn--danger" id="block">⛔ Block card</button>`) : ""}
             </div>
+            ${issued && rec.cardBlocked ? `<p class="form-status is-err" style="display:block;margin-top:10px">${office ? `Blocked on ${fmtDate(rec.cardBlockedAt)}${rec.cardBlockReason ? " — " + esc(rec.cardBlockReason) : ""}. Scanning its QR code shows <b>Card blocked</b>.` : "This card has been blocked by the academy. Contact the academy office."}</p>` : ""}
             ${!issued && office && miss.length ? `<p class="muted small" style="margin-top:10px">The <b>Issue card</b> button unlocks when all details above are complete.</p>` : ""}
             ${!issued && !office ? `<p class="form-status ${miss.length ? "" : "is-ok"}" style="display:block;margin-top:10px">${miss.length ? "Complete the details above. Your card is then issued by the principal or the academy office." : "Your details are complete ✓ The principal or the academy office will now issue your card — you can print it here after that."}</p>` : ""}
             ${issued ? `<p class="muted small" style="margin-top:10px">Prints at real ID-card size (54 × 86 mm), front and back. Choose “Save as PDF” in the print window to keep a copy, or take it to any print shop for PVC printing.</p>` : ""}
@@ -201,7 +203,7 @@ export function idCardPage(kind, { office = false, canIssue = true } = {}) {
         if (missing(kind, draft).length) { toast("Complete all details first", true); return; }
         const unsaved = FIELDS[kind].filter(canEdit).some((fl) => (draft[fl.key] ?? "") !== (rec[fl.key] ?? ""));
         if (unsaved) { toast("Save your details first", true); return; }
-        const patch = { cardNo: kind === "student" ? id : "EMP-" + id, cardIssuedAt: today(), cardValidUntil: kind === "student" ? ID_CARD.studentValidUntil : addYears(today(), ID_CARD.staffValidYears), verifyCode: newVerifyCode() };
+        const patch = { cardBlocked: false, cardBlockedAt: "", cardBlockReason: "", cardNo: kind === "student" ? id : "EMP-" + id, cardIssuedAt: today(), cardValidUntil: kind === "student" ? ID_CARD.studentValidUntil : addYears(today(), ID_CARD.staffValidYears), verifyCode: newVerifyCode() };
         const btn = $("#issue") || $("#reissue"); if (btn) btn.disabled = true;
         try {
           // public verification record first, then the card itself
@@ -217,6 +219,27 @@ export function idCardPage(kind, { office = false, canIssue = true } = {}) {
         } catch (x) { toast(x.message || "Could not issue the card", true); if (btn) btn.disabled = false; return; }
         toast("Card issued!"); idCard({ el, user, params, title });
       };
+      /* Block / unblock (principal & admin): the QR code then shows "Card blocked" */
+      $("#block")?.addEventListener("click", () => dialog({
+        title: `Block ${rec.name}'s card`, submit: "Block card",
+        body: `<p>The card stops working at once: scanning its QR code will show <b>Card blocked — do not accept</b>. You can unblock it later.</p>
+          ${field("br", "Reason", `<select id="br" name="reason">${options(["Card lost", "Left the academy", "Fee not paid", "Misuse of card", "Other"])}</select>`)}`,
+        onSubmit: async (f) => {
+          if (rec.verifyCode) await store.update("cardVerify", rec.verifyCode, { status: "blocked" });
+          const patch = { cardBlocked: true, cardBlockedAt: today(), cardBlockReason: f.reason.value };
+          await store.update(col, id, patch); Object.assign(rec, patch);
+          toast("Card blocked"); idCard({ el, user, params, title });
+        }
+      }));
+      $("#unblock")?.addEventListener("click", async (e) => {
+        e.currentTarget.disabled = true;
+        try {
+          if (rec.verifyCode) await store.update("cardVerify", rec.verifyCode, { status: "valid" });
+          const patch = { cardBlocked: false, cardBlockedAt: "", cardBlockReason: "" };
+          await store.update(col, id, patch); Object.assign(rec, patch);
+          toast("Card unblocked"); idCard({ el, user, params, title });
+        } catch (x) { toast(x.message, true); e.currentTarget.disabled = false; }
+      });
       $("#issue")?.addEventListener("click", doIssue);
       $("#reissue")?.addEventListener("click", doIssue);
       $("#print")?.addEventListener("click", () => {
@@ -231,6 +254,7 @@ export function idCardPage(kind, { office = false, canIssue = true } = {}) {
 
 /* Small status used in admin tables */
 export function cardStatus(kind, r) {
+  if (r.cardIssuedAt && r.cardBlocked) return pill("Blocked", "red");
   if (r.cardIssuedAt) return pill("Issued", "green");
   return missing(kind, r).length ? pill("Incomplete", "grey") : pill("Ready", "gold");
 }

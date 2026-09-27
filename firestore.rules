@@ -77,14 +77,14 @@ service cloud.firestore {
     }
     match /students/{sid} {
       allow read: if canSeeStudent(sid);
-      allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address', 'phone', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']));
+      allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address', 'phone', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode', 'cardBlocked', 'cardBlockedAt', 'cardBlockReason']));
       // students may fill in their own card details before the card is issued; only the office issues it
       allow update: if isStudent(sid) && resource.data.get('cardIssuedAt', '') == ''
                     && cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address']);
     }
     match /staff/{id} {
       allow read: if hasProfile();
-      allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone', 'joinDate', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']));
+      allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone', 'joinDate', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode', 'cardBlocked', 'cardBlockedAt', 'cardBlockReason']));
       allow update: if isStaff() && me().linkId == id && resource.data.get('cardIssuedAt', '') == ''
                     && cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone']);
     }
@@ -105,7 +105,7 @@ service cloud.firestore {
       allow list: if false;
       // cards are issued only by the principal or the academy office
       allow create: if code.size() == 12 && request.resource.data.status == 'valid' && isOffice();
-      allow update: if isOffice() && onlyChanges(['status']) && request.resource.data.status in ['valid', 'revoked'];
+      allow update: if isOffice() && onlyChanges(['status']) && request.resource.data.status in ['valid', 'revoked', 'blocked'];
       allow delete: if isAdmin();
     }
     match /timetable/{classId} {
