@@ -9,6 +9,8 @@ const PRIMARY = ["English", "Urdu", "Mathematics", "General Science", "Islamiat"
 const MIDDLE = ["English", "Urdu", "Mathematics", "Science", "Islamiat", "Social Studies", "Computer"];
 const MATRIC = ["English", "Urdu", "Mathematics", "Physics", "Chemistry", "Biology", "Computer Science", "Islamiat / Pak Studies"];
 const INTER = ["English", "Urdu", "Mathematics", "Physics", "Chemistry", "Biology", "Computer Science", "Accounting", "Economics", "Islamiat / Pak Studies"];
+const OLEVEL = ["Mathematics", "Additional Mathematics", "Physics", "Chemistry", "Biology", "Computer Science", "English Language", "Urdu", "Islamiyat", "Pakistan Studies", "Economics", "Accounting", "Business Studies"];
+const ALEVEL = ["Mathematics", "Further Mathematics", "Physics", "Chemistry", "Biology", "Computer Science", "English", "Economics", "Accounting", "Business", "Psychology", "Sociology"];
 const BS = ["Mathematics", "Statistics", "Physics", "Chemistry", "Computer Science", "Programming (C / C++)", "English"];
 
 /* Fee bands. Tuition is charged per subject the student takes (the student record
@@ -21,6 +23,7 @@ export const BANDS = {
   matric:  { label: "Matric (9 – 10)",    perSubject: 2500 },
   inter:   { label: "Intermediate",       perSubject: 3500 },
   bs:      { label: "BS / University",    perSubject: 5000 },
+  intl:    { label: "GCSE / O & A Level", perSubject: 0 },      // tuition fee per subject — set it here (0 = not charged on challans yet)
   course:  { label: "Computer courses" }
 };
 
@@ -36,6 +39,8 @@ export const CLASSES = [
   { id: "10", level: 10, band: "matric", name: "Class 10 (Matric)", short: "10", subjects: MATRIC },
   { id: "11", level: 11, band: "inter", name: "1st Year (FSc / ICS / I.Com)", short: "11", subjects: INTER },
   { id: "12", level: 12, band: "inter", name: "2nd Year (FSc / ICS / I.Com)", short: "12", subjects: INTER },
+  { id: "OL", level: 10, band: "intl", name: "GCSE / O Level (Cambridge)", short: "O-L", subjects: OLEVEL },
+  { id: "AL", level: 12, band: "intl", name: "A Level (AS / A2)", short: "A-L", subjects: ALEVEL },
   { id: "BS", level: 13, band: "bs", name: "BS / BCS (University)", short: "BS", subjects: BS },
   course("CC-BASIC", "Computer Basics & Typing", 2500, 1),
   course("CC-SCRATCH", "Scratch Coding for Kids", 5000, 2),
@@ -132,7 +137,7 @@ export const SUBSCRIPTION = {
    ========================================================== */
 export const CLASSROOM = {
   // classes that can join the online classroom (Play Group to Intermediate)
-  eligible: ["PG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+  eligible: ["PG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "OL", "AL"],
   maxFileMB: 2,            // per file — files are saved in Firestore (free plan); photos are shrunk automatically
   maxFiles: 6,             // per submission
   maxVoiceSec: 90,         // longest voice note (1½ minutes keeps it under 2 MB)
@@ -161,7 +166,8 @@ export const CLASSROOM = {
     bands: [
       { id: "junior", label: "Play Group – Class 5", classes: ["PG", "1", "2", "3", "4", "5"], prices: { silver: 1000, gold: 2500, diamond: 5000 } },
       { id: "middle", label: "Class 6 – 8",          classes: ["6", "7", "8"],                   prices: { silver: 1500, gold: 3000, diamond: 6000 } },
-      { id: "senior", label: "Class 9 – 12",         classes: ["9", "10", "11", "12"],           prices: { silver: 2500, gold: 5000, diamond: 10000 } }
+      { id: "senior", label: "Class 9 – 12",         classes: ["9", "10", "11", "12"],           prices: { silver: 2500, gold: 5000, diamond: 10000 } },
+      { id: "intl",   label: "GCSE / O & A Level",   classes: ["OL", "AL"],                      prices: { silver: 10000, gold: 20000, diamond: 30000 } }
     ],
     perks: [
       "Upload homework as photos, PDF or a voice note",

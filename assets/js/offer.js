@@ -8,12 +8,12 @@ import { getOffer, countdown } from "../../portal/js/classroom-kit.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const rs = (n) => Number(n).toLocaleString("en-PK");
 
-export const CLASS_LABEL = { PG: "Play Group", 11: "1st Year", 12: "2nd Year (Intermediate)" };
+export const CLASS_LABEL = { PG: "Play Group", 11: "1st Year", 12: "2nd Year (Intermediate)", OL: "GCSE / O Level", AL: "A Level" };
 export const classLabel = (id) => CLASS_LABEL[id] || (/^\d+$/.test(id) ? "Class " + id : id);
 export function rangeText(ids) {
   if (!ids.length) return "";
   const has = (x) => ids.includes(x);
-  if (has("PG") && has("12") && ids.length >= 13) return "Play Group to Intermediate";
+  if (has("PG") && has("12") && ids.length >= 13) return "Play Group to Intermediate" + (has("OL") || has("AL") ? ", GCSE, O & A Level" : "");
   return ids.length <= 3 ? ids.map(classLabel).join(", ") : `${classLabel(ids[0])} to ${classLabel(ids.at(-1))}`;
 }
 

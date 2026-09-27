@@ -68,7 +68,7 @@ async function upgradePage({ el, user }) {
       ${cd ? `<p class="offer-hero__cd">⏳ Offer ends in <b data-cd>${esc(cd.text)}</b></p>` : ""}
       ${offer.seatsLeft !== null ? `<p class="offer-hero__cd">🔥 Only <b>${offer.seatsLeft}</b> seats left</p>` : ""}
     </div>
-    ${!eligible || !plans.length ? `<p class="form-status is-err" style="display:block">The Online Classroom offer is for Play Group to Intermediate. Your class (${esc(className(user.classId))}) is not included — contact the academy office.</p>`
+    ${!eligible || !plans.length ? `<p class="form-status is-err" style="display:block">The Online Classroom is for Play Group to Intermediate, GCSE, O &amp; A Level. Your class (${esc(className(user.classId))}) is not included — contact the academy office.</p>`
       : !offer.open ? `<p class="form-status is-err" style="display:block">This offer is closed right now${offer.expired ? " (it ended on " + fmtDate(offer.endsOn) + ")" : offer.full ? " (all seats are taken)" : ""}. Ask the academy office about the next batch.</p>`
       : `<div class="paywall__grid"><div><h3>Every package includes</h3>${perks}</div><div>${payPanel(plans, "classroom-gold", false, { form: false })}</div></div>
          <h3 style="margin-top:22px">Choose your package and pay</h3>${payPanel(plans, "classroom-gold", false, { box: false })}

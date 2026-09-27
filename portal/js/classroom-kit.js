@@ -18,6 +18,8 @@ export async function getOffer() {
   const o = { ...def, ...(saved || {}) };
   if (!Array.isArray(o.bands) || !o.bands.length) { o.bands = def.bands; o.title = def.title; o.badge = def.badge; }
   if (!Array.isArray(o.tiers) || !o.tiers.length) o.tiers = def.tiers;
+  // class groups added later (e.g. GCSE / O & A Level) appear even if the admin saved the offer before
+  def.bands.forEach((b) => { if (!o.bands.some((x) => x.id === b.id)) o.bands = [...o.bands, b]; });
   if (o.demo === undefined) o.demo = def.demo;
   o.bands = o.bands.map((b) => ({ ...b, classes: (b.classes || []).filter((id) => CLASSES.some((c) => c.id === id)), prices: Object.fromEntries(o.tiers.map((t) => [t.id, Number(b.prices?.[t.id]) || 0])) }));
   o.tiers = o.tiers.map((t) => ({ ...t, perks: (t.perks || []).filter(Boolean) }));

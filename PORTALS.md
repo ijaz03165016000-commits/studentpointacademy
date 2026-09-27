@@ -14,7 +14,7 @@ Built by Ijaz Software House · www.ijazs.online
 
 ## Classes and fees (set in `portal/js/school.js`)
 
-- **Classes:** Play Group, Class 1–10, 1st Year, 2nd Year, BS / BCS, and each computer course (Computer Basics, Scratch, MS Office, AI Tools, Graphic Design, Video Editing, Python, Web Development, Arduino, IoT, Freelancing, IT Diploma).
+- **Classes:** Play Group, Class 1–10, 1st Year, 2nd Year, GCSE / O Level, A Level, BS / BCS, and each computer course (Computer Basics, Scratch, MS Office, AI Tools, Graphic Design, Video Editing, Python, Web Development, Arduino, IoT, Freelancing, IT Diploma).
 - **Fees are subject-wise.** When you add a student you tick the subjects they take, and the monthly fee is worked out from that:
   Play Group Rs. 1,000 package · Class 1–5 Rs. 500 · Class 6–8 Rs. 1,000 · Matric Rs. 2,500 · Intermediate Rs. 3,500 · BS Rs. 5,000 per subject.
   Computer courses: the complete-course fee split into monthly instalments (e.g. Python Rs. 10,000 over 3 months).
@@ -61,6 +61,7 @@ A paid add-on for students who learn from home, in three monthly packages:
 | Play Group – Class 5 | Rs. 1,000 | Rs. 2,500 | Rs. 5,000 |
 | Class 6 – 8 | Rs. 1,500 | Rs. 3,000 | Rs. 6,000 |
 | Class 9 – 12 | Rs. 2,500 | Rs. 5,000 | Rs. 10,000 |
+| GCSE / O & A Level | Rs. 10,000 | Rs. 20,000 | Rs. 30,000 |
 
 Silver = 15 min daily one-to-one time with the teacher, Gold = 30 min + voice feedback & progress report, Diamond = 1 hour + individual consultancy & same-day checking. Free demo class for 1 day.
 
