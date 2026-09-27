@@ -367,7 +367,14 @@ export function staffView({ canEdit }) {
     if (!canEdit) return;
     const reload = () => staffList({ el });
     const allSubjects = [...new Set(CLASSES.flatMap((c) => c.subjects))].sort();
-    const edit = (t) => dialog({
+    /* "Select all" / "Clear all" buttons for subjects and classes */
+    const wireAll = (d) => $$(".sel-all", d).forEach((b) => {
+      const boxes = () => $$(`input[name="${b.dataset.all}"]`, d);
+      const sync = () => (b.textContent = boxes().every((i) => i.checked) ? "Clear all" : "Select all");
+      b.onclick = () => { const on = !boxes().every((i) => i.checked); boxes().forEach((i) => (i.checked = on)); sync(); };
+      boxes().forEach((i) => i.addEventListener("change", sync)); sync();
+    });
+    const edit = (t) => wireAll(dialog({
       title: t ? "Edit " + t.name : "Add staff member", wide: true, submit: t ? "Save" : "Add",
       body: `<div class="form">
         ${field("t-name", "Full name (with title)", `<input id="t-name" name="name" required value="${esc(t?.name || "")}" placeholder="e.g. Mr. Ali Raza">`)}
@@ -376,8 +383,8 @@ export function staffView({ canEdit }) {
         ${field("t-email", "Email", `<input id="t-email" name="email" type="email" value="${esc(t?.email || "")}">`)}
         ${field("t-q", "Qualification", `<input id="t-q" name="qualification" value="${esc(t?.qualification || "")}">`)}
         ${field("t-ct", "Class teacher of", `<select id="t-ct" name="classTeacherOf"><option value="">None</option>${options(CLASSES.map((c) => [c.id, c.name]), t?.classTeacherOf)}</select>`)}
-        <fieldset class="full" style="border:0;padding:0;margin:0"><legend style="font-weight:700;color:var(--navy);margin-bottom:6px">Subjects</legend><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px">${allSubjects.map((s) => `<label><input type="checkbox" name="sub" value="${esc(s)}"${t?.subjects?.includes(s) ? " checked" : ""}> ${esc(s)}</label>`).join("")}</div></fieldset>
-        <fieldset class="full" style="border:0;padding:0;margin:0"><legend style="font-weight:700;color:var(--navy);margin-bottom:6px">Teaches these classes</legend><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px">${CLASSES.map((c) => `<label><input type="checkbox" name="cls" value="${c.id}"${t?.classIds?.includes(c.id) ? " checked" : ""}> ${esc(c.name)}</label>`).join("")}</div></fieldset>
+        <fieldset class="full" style="border:0;padding:0;margin:0"><legend style="font-weight:700;color:var(--navy);margin-bottom:6px">Subjects <button type="button" class="btn btn--outline btn--sm sel-all" data-all="sub" style="margin-left:10px;padding:3px 12px;font-size:.82rem">Select all</button></legend><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px">${allSubjects.map((s) => `<label><input type="checkbox" name="sub" value="${esc(s)}"${t?.subjects?.includes(s) ? " checked" : ""}> ${esc(s)}</label>`).join("")}</div></fieldset>
+        <fieldset class="full" style="border:0;padding:0;margin:0"><legend style="font-weight:700;color:var(--navy);margin-bottom:6px">Teaches these classes & courses <button type="button" class="btn btn--outline btn--sm sel-all" data-all="cls" style="margin-left:10px;padding:3px 12px;font-size:.82rem">Select all</button></legend><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px">${CLASSES.map((c) => `<label><input type="checkbox" name="cls" value="${c.id}"${t?.classIds?.includes(c.id) ? " checked" : ""}> ${esc(c.name)}</label>`).join("")}</div></fieldset>
         ${t ? "" : `${field("t-id", "Staff ID (login)", `<input id="t-id" name="tid" required placeholder="e.g. T14" style="text-transform:uppercase">`)}${field("t-pw", "Password", `<input id="t-pw" name="pw" required value="${Math.random().toString(36).slice(2, 8)}">`)}`}
       </div>`,
       onSubmit: async (f) => {
@@ -394,7 +401,7 @@ export function staffView({ canEdit }) {
         }
         reload();
       }
-    });
+    }));
     $("#addT").onclick = () => edit(null);
     $$("[data-ed]").forEach((b) => (b.onclick = () => edit(staff.find((x) => x.id === b.dataset.ed))));
   };
