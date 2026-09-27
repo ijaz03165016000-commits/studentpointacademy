@@ -159,8 +159,8 @@ export const CLASSROOM = {
     badge: "New packages",
     /* Three packages. The admin can rename them and change what each includes. */
     tiers: [
-      { id: "silver",  name: "Silver",  perks: ["15 minutes daily one-to-one time with the teacher", "Homework checked with written feedback", "Weekly Dua & Kalma lesson", "Voice chat with teacher (reply within 24 hours)"] },
-      { id: "gold",    name: "Gold",    perks: ["30 minutes daily one-to-one time with the teacher", "Written + voice feedback on every homework", "Daily Dua & Qirat practice with corrections", "Monthly progress report for parents"] },
+      { id: "silver",  name: "Silver",  perks: ["30 minutes daily one-to-one time with the teacher", "Homework checked with written feedback", "Weekly Dua & Kalma lesson", "Voice chat with teacher (reply within 24 hours)"] },
+      { id: "gold",    name: "Gold",    perks: ["40 minutes daily one-to-one time with the teacher", "Written + voice feedback on every homework", "Daily Dua & Qirat practice with corrections", "Monthly progress report for parents"] },
       { id: "diamond", name: "Diamond", perks: ["1 hour daily one-to-one time with the teacher", "Individual consultancy: study plan & exam guidance", "Same-day homework checking (priority)", "Extra worksheets, weekly test & parent meeting every month"] }
     ],
     /* Monthly price of each package, by class group (Rs.) */
