@@ -106,10 +106,50 @@ async function settings({ el }) {
       : `<p>${pill("Demo mode", "gold")} The portals are running on sample data stored in this browser only.</p>
          <p>To go live, paste your Firebase web config into <code>assets/js/config.js</code>, publish <code>firestore.rules</code>, and create the first admin login (see <code>PORTALS.md</code>).</p>
          <button class="btn btn--outline btn--sm" id="reset">Reset demo data</button>`)}
+    ${card("Start fresh", `<p>Delete <b>all students, parents, tutors and the principal</b> — with their attendance, results, homework, fees, leave, messages, portal payments, online-classroom work and enrolments. <b>Admin logins stay.</b> Notices, timetables' layout, website articles and the offer settings stay.</p>
+      <p class="muted small">This cannot be undone. Use it once, before you add your real students and staff one by one.</p>
+      <button class="btn btn--outline btn--sm linkbtn--danger" id="wipe" type="button">Start fresh…</button>`)}
     ${card("School structure", `<p class="muted">Classes, subjects, monthly fees, period timings and grading are set in <code>portal/js/school.js</code>.</p>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Class</th><th>Subjects</th></tr></thead><tbody>${CLASSES.map((c) => `<tr><td class="nowrap"><b>${esc(c.name)}</b></td><td class="small">${esc(c.subjects.join(", "))}</td></tr>`).join("")}</tbody></table></div>`)}
   </div>`;
+  $("#wipe").onclick = () => startFresh();
   $("#reset")?.addEventListener("click", (e) => armed(e.currentTarget, () => { store.resetDemo(); location.replace("index.html"); }, "Click again — this signs you out"));
+}
+
+/* ---------------- Start fresh: delete everyone except admins ---------------- */
+const WIPE = ["students", "staff", "attendance", "staffAttendance", "exams", "homework", "fees", "leaves", "messages", "subscriptions", "classPosts", "classWork", "classChat", "classroomEnrollments", "timetable", "cardVerify"];
+function startFresh() {
+  const d = dialog({
+    title: "Start fresh — delete everyone except admin", submit: "Delete everything",
+    body: `<p>This permanently deletes every <b>student, parent, tutor and principal</b> login and all their records. Admin logins are kept.</p>
+      ${field("wc", 'Type <b>DELETE</b> to confirm', `<input id="wc" name="confirm" autocomplete="off" required>`)}
+      <p class="muted small" id="wstat" role="status"></p>`,
+    onSubmit: async (f) => {
+      if (f.confirm.value.trim() !== "DELETE") throw new Error("Type DELETE in capital letters to confirm.");
+      const st = $("#wstat", d), done = [];
+      const users = (await store.list("users")).filter((u) => u.role !== "admin" && u.id !== me.id);
+      st.textContent = `Deleting ${users.length} logins…`;
+      await store.removeMany("users", users.map((u) => "users/" + u.id));
+      done.push(`${users.length} logins`);
+      for (const col of WIPE) {
+        const docs = await store.list(col).catch(() => []);
+        if (!docs.length) continue;
+        st.textContent = `Deleting ${col} (${docs.length})…`;
+        await store.removeMany(col, docs.map((x) => (store.IS_LIVE ? col + "/" : "") + x.id));
+        done.push(`${docs.length} ${col}`);
+      }
+      const files = await store.list("files").catch(() => []);
+      for (let i = 0; i < files.length; i++) {
+        st.textContent = `Deleting uploaded files ${i + 1} of ${files.length}…`;
+        const parts = await store.filePartPaths(files[i].id);
+        await store.removeMany("files", [...parts, "files/" + files[i].id]);
+      }
+      if (files.length) done.push(`${files.length} uploaded files`);
+      dialog({ title: "Done — academy is empty", body: `<p>Deleted: ${esc(done.join(", ") || "nothing (it was already empty)")}.</p>
+        ${store.IS_LIVE ? `<p><b>One more step:</b> the old sign-in accounts still exist in Firebase. Open <b>Firebase console → Authentication → Users</b>, tick every user <b>except admin@studentpointacademy.online</b>, and delete them. Otherwise you can't reuse the same IDs (e.g. SPA-0101, T01).</p>` : ""}
+        <p>Now add your staff (Staff → Add staff member) and students (Students → Add student) one by one.</p>` });
+    }
+  });
 }
 
 export const views = {
