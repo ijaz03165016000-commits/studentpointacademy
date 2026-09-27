@@ -71,12 +71,16 @@ function qrSvg(text) {
 const logo = "../assets/img/logo-light.svg";
 const photoBox = (r) => r.photo ? `<img class="idc__photo" src="${esc(r.photo)}" alt="">` : `<div class="idc__photo idc__photo--empty"><span>${esc(initials(r.name || "?"))}</span><small>Photo</small></div>`;
 
+/* Big red stamp across a blocked card (shown everywhere the card is shown, and printed) */
+const blockedStamp = (r) => r.cardIssuedAt && r.cardBlocked ? `<div class="idc__blocked" aria-label="This card is blocked"><span>BLOCKED</span><small>${esc(r.cardBlockReason || "")}${r.cardBlockedAt ? " · " + fmtDate(r.cardBlockedAt) : ""}</small></div>` : "";
+export const blockedBanner = (r, who = "Your") => r?.cardIssuedAt && r.cardBlocked ? `<div class="blocked-banner" role="alert"><b>⛔ ${who} ID card is BLOCKED</b><span>${r.cardBlockReason ? esc(r.cardBlockReason) + " · " : ""}blocked on ${fmtDate(r.cardBlockedAt)}. It will show “Card blocked” when scanned. Contact the academy office.</span></div>` : "";
+
 export function cardFront(kind, r) {
   const rows = kind === "student"
     ? [["Father", r.fatherName], ["Class", className(r.classId).replace("Class ", "")], ["Roll no.", r.rollNo], ["Blood group", r.bloodGroup], ["Date of birth", r.dob ? fmtDate(r.dob) : ""]]
     : [["Designation", r.designation], ["Department", (r.subjects || []).slice(0, 2).join(", ") || "Administration"], ["Blood group", r.bloodGroup], ["Mobile", r.phone], ["Joined", r.joinDate ? fmtDate(r.joinDate) : ""]];
   const valid = r.cardValidUntil || (kind === "student" ? ID_CARD.studentValidUntil : addYears(today(), ID_CARD.staffValidYears));
-  return `<div class="idc idc--front idc--${kind}">
+  return `<div class="idc idc--front idc--${kind}">${blockedStamp(r)}
     <div class="idc__top"><img src="${logo}" alt=""><div><b>${esc(SITE.name)}</b><span>${esc(SITE.city)}</span></div></div>
     <div class="idc__ribbon">${kind === "student" ? "STUDENT CARD" : "EMPLOYEE CARD"}</div>
     ${photoBox(r)}
@@ -88,7 +92,7 @@ export function cardFront(kind, r) {
 }
 
 export function cardBack(kind, r) {
-  return `<div class="idc idc--back idc--${kind}">
+  return `<div class="idc idc--back idc--${kind}">${blockedStamp(r)}
     <div class="idc__backtop"><img src="${logo}" alt=""><b>${esc(SITE.name)}</b></div>
     <div class="idc__backbody">
       <p class="idc__note">This card is the property of ${esc(SITE.name)} and must be carried at all times at the academy. It is not transferable.</p>

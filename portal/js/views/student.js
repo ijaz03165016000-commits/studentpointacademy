@@ -4,11 +4,11 @@ import { className } from "../school.js";
 import { fmtDate } from "../ui.js";
 import { studentViews, noticesView, profileView } from "./shared.js";
 import { renewBanner, subscriptionPage } from "./subscribe.js";
-import { idCardPage } from "./idcard.js";
+import { idCardPage, blockedBanner } from "./idcard.js";
 import { studentClassroom, studentCounts } from "./classroom.js";
 
-let sid, me;
-export function init(user) { me = user; sid = user.linkId || user.id; }
+let sid, me, myRec = null;
+export async function init(user) { me = user; sid = user.linkId || user.id; try { myRec = await store.get("students", sid); } catch {} }
 
 export const nav = [
   { id: "home", label: "Dashboard", icon: "home" },
@@ -25,7 +25,7 @@ export const nav = [
   { id: "subscription", label: "Subscription", icon: "star" }
 ];
 
-const sv = studentViews(() => sid, { header: () => (me && ["", "#/", "#/home"].includes(location.hash.split("?")[0]) ? renewBanner(me) : "") });
+const sv = studentViews(() => sid, { header: () => (me && ["", "#/", "#/home"].includes(location.hash.split("?")[0]) ? blockedBanner(myRec) + renewBanner(me) : "") });
 export const parentOf = { task: "classroom" };
 export const views = {
   ...sv,

@@ -5,7 +5,7 @@ import {
   $, $$, esc, icon, kpi, card, empty, pill, person, statusPill, bars, toast, dialog, field, options, armed,
   fmtDate, dayBox, today, dayName, attendanceStats, examResult, pct
 } from "../ui.js";
-import { idCardPage } from "./idcard.js";
+import { idCardPage, blockedBanner } from "./idcard.js";
 import { staffClassroom, staffCounts } from "./classroom.js";
 import { timetableGrid, todayList, noticesView, noticeList, noticesFor, profileView, messagesView, unreadCount, currentPeriod } from "./shared.js";
 
@@ -68,7 +68,7 @@ async function home({ el, user }) {
   const unmarked = myClasses.filter((c, i) => !att[i] && c === me.classTeacherOf);
   const ctAtt = me.classTeacherOf ? att[myClasses.indexOf(me.classTeacherOf)] : null;
   const ctStats = ctAtt ? Object.values(ctAtt.records) : [];
-  el.innerHTML = `
+  el.innerHTML = blockedBanner(me) + `
   <div class="hello"><div><h2>Good ${new Date().getHours() < 12 ? "morning" : "afternoon"}, ${esc(me.name)}</h2>
     <p>${esc(me.designation)} · ${esc(me.subjects.join(", "))}${me.classTeacherOf ? ` · Class teacher of <b>${esc(className(me.classTeacherOf))}</b>` : ""}</p></div>
     ${unmarked.length ? `<a class="btn btn--gold" href="#/attendance?c=${encodeURIComponent(unmarked[0])}">Mark today's attendance</a>` : ""}
