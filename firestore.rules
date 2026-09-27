@@ -78,14 +78,15 @@ service cloud.firestore {
     match /students/{sid} {
       allow read: if canSeeStudent(sid);
       allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address', 'phone', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']));
+      // students may fill in their own card details before the card is issued; only the office issues it
       allow update: if isStudent(sid) && resource.data.get('cardIssuedAt', '') == ''
-                    && cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']);
+                    && cardSelfEdit(['photo', 'dob', 'bloodGroup', 'address']);
     }
     match /staff/{id} {
       allow read: if hasProfile();
       allow write: if isOffice() && (isAdmin() || cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone', 'joinDate', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']));
       allow update: if isStaff() && me().linkId == id && resource.data.get('cardIssuedAt', '') == ''
-                    && cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone', 'cardNo', 'cardIssuedAt', 'cardValidUntil', 'verifyCode']);
+                    && cardSelfEdit(['photo', 'bloodGroup', 'address', 'phone']);
     }
     // ID-card verification: the QR code on the back of each card opens verify.html?c=<code>.
     // Anyone can read ONE card by its random code; listing all cards is blocked.
@@ -102,10 +103,8 @@ service cloud.firestore {
       }
       allow get: if true;
       allow list: if false;
-      allow create: if code.size() == 12 && request.resource.data.status == 'valid' && (
-                       isOffice()
-                    || (request.resource.data.kind == 'student' && isStudent(request.resource.data.ref) && sameStudent(request.resource.data))
-                    || (request.resource.data.kind == 'staff' && isStaff() && me().linkId == request.resource.data.ref && sameStaff(request.resource.data)));
+      // cards are issued only by the principal or the academy office
+      allow create: if code.size() == 12 && request.resource.data.status == 'valid' && isOffice();
       allow update: if isOffice() && onlyChanges(['status']) && request.resource.data.status in ['valid', 'revoked'];
       allow delete: if isAdmin();
     }

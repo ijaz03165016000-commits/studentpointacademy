@@ -163,11 +163,12 @@ export function idCardPage(kind, { office = false, canIssue = true } = {}) {
             <div class="card2__head"><h3>${LABEL[kind]} preview</h3>${issued ? pill("Issued " + fmtDate(rec.cardIssuedAt, false), "green") : miss.length ? pill("Incomplete", "gold") : pill("Ready to issue", "green")}</div>
             <div class="idc-pair" id="cardPrint">${cardFront(kind, draft)}${cardBack(kind, draft)}</div>
             <div class="idc-actions">
-              ${!issued && canIssue ? `<button class="btn btn--gold" id="issue"${miss.length ? " disabled" : ""}>${icon("star").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Issue card</button>` : ""}
+              ${!issued && canIssue && office ? `<button class="btn btn--gold" id="issue"${miss.length ? " disabled" : ""}>${icon("star").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Issue card</button>` : ""}
               ${issued ? `<button class="btn btn--navy" id="print">${icon("print").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Print / save as PDF</button>` : ""}
               ${issued && office ? `<button class="btn btn--outline btn--sm" id="reissue">Re-issue with current details</button>` : ""}
             </div>
-            ${!issued && miss.length ? `<p class="muted small" style="margin-top:10px">The <b>Issue card</b> button unlocks when all details above are complete.</p>` : ""}
+            ${!issued && office && miss.length ? `<p class="muted small" style="margin-top:10px">The <b>Issue card</b> button unlocks when all details above are complete.</p>` : ""}
+            ${!issued && !office ? `<p class="form-status ${miss.length ? "" : "is-ok"}" style="display:block;margin-top:10px">${miss.length ? "Complete the details above. Your card is then issued by the principal or the academy office." : "Your details are complete ✓ The principal or the academy office will now issue your card — you can print it here after that."}</p>` : ""}
             ${issued ? `<p class="muted small" style="margin-top:10px">Prints at real ID-card size (54 × 86 mm), front and back. Choose “Save as PDF” in the print window to keep a copy, or take it to any print shop for PVC printing.</p>` : ""}
           </section>
         </div>
@@ -196,6 +197,7 @@ export function idCardPage(kind, { office = false, canIssue = true } = {}) {
         catch (x) { st.textContent = x.message; st.className = "form-status is-err"; }
       };
       const doIssue = async () => {
+        if (!office) { toast("Only the principal or the academy office can issue cards.", true); return; }
         if (missing(kind, draft).length) { toast("Complete all details first", true); return; }
         const unsaved = FIELDS[kind].filter(canEdit).some((fl) => (draft[fl.key] ?? "") !== (rec[fl.key] ?? ""));
         if (unsaved) { toast("Save your details first", true); return; }
