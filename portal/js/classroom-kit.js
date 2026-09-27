@@ -41,7 +41,7 @@ export function countdown(endsOn) {
 export const fmtSize = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
 
 /* Shrink large photos (phone cameras make 4–8 MB images) to ~1600px JPEG */
-export async function shrinkImage(file, max = 1600, quality = 0.82) {
+export async function shrinkImage(file, max = 1400, quality = 0.78) {
   if (!/^image\/(jpeg|png|webp|heic|heif)/i.test(file.type) || file.size < 350 * 1024) return file;
   try {
     const bmp = await createImageBitmap(file);
@@ -132,7 +132,7 @@ export function wireVoice(root, id) {
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
     catch { showErr("Microphone permission was blocked. Allow the microphone for this site in your browser settings, or choose an audio file instead."); return; }
     chunks = [];
-    rec = mime ? new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 48000 }) : new MediaRecorder(stream);
+    rec = mime ? new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 32000 }) : new MediaRecorder(stream);
     rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
     rec.onstop = () => {
       clearInterval(timer); stream.getTracks().forEach((t) => t.stop());
@@ -168,16 +168,30 @@ export async function uploadBundle(files = [], voice = null, onStep = () => {}) 
   return { files: out, audio };
 }
 
-/* ---------------- Showing attachments ---------------- */
-export const audioPlayer = (a, label = "") => a?.url ? `<div class="vnote">${label ? `<span class="vnote__lbl">🎧 ${esc(label)}</span>` : ""}<audio controls preload="none" src="${esc(a.url)}"></audio><a class="linkbtn small" href="${esc(a.url)}" download="${esc(a.name || "voice-note")}" target="_blank" rel="noopener">Download</a></div>` : "";
+/* ---------------- Showing attachments ----------------
+   Live files are stored in Firestore as "fs:<id>". The HTML gets
+   data-fs attributes, and this watcher swaps in a playable link as
+   soon as the element appears on the page. */
+const src = (url, attr) => String(url).startsWith("fs:") ? `data-fs="${esc(url)}" data-fs-attr="${attr}"` : `${attr}="${esc(url)}"`;
+function hydrate(root) {
+  const els = root.querySelectorAll ? [...(root.matches?.("[data-fs]") ? [root] : []), ...root.querySelectorAll("[data-fs]")] : [];
+  els.forEach((el) => {
+    const u = el.dataset.fs, attr = el.dataset.fsAttr; el.removeAttribute("data-fs");
+    store.fsUrl(u).then((b) => el.setAttribute(attr, b)).catch(() => { el.title = "This file could not be loaded"; el.classList.add("is-missing"); });
+  });
+}
+if (typeof MutationObserver !== "undefined" && typeof document !== "undefined") {
+  new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && hydrate(n)))).observe(document.documentElement, { childList: true, subtree: true });
+}
+export const audioPlayer = (a, label = "") => a?.url ? `<div class="vnote">${label ? `<span class="vnote__lbl">🎧 ${esc(label)}</span>` : ""}<audio controls preload="metadata" ${src(a.url, "src")}></audio><a class="linkbtn small" ${src(a.url, "href")} download="${esc(a.name || "voice-note")}" target="_blank" rel="noopener">Download</a></div>` : "";
 
 export function filesView(files = []) {
   if (!files?.length) return "";
   const imgs = files.filter((f) => f.type?.startsWith("image/") && f.url), audios = files.filter((f) => f.type?.startsWith("audio/")), rest = files.filter((f) => !imgs.includes(f) && !audios.includes(f));
   return `<div class="files">
-    ${imgs.length ? `<div class="files__imgs">${imgs.map((f) => `<a href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name)}"><img src="${esc(f.url)}" alt="${esc(f.name)}" loading="lazy"></a>`).join("")}</div>` : ""}
+    ${imgs.length ? `<div class="files__imgs">${imgs.map((f) => `<a ${src(f.url, "href")} target="_blank" rel="noopener" title="${esc(f.name)}"><img ${src(f.url, "src")} alt="${esc(f.name)}"></a>`).join("")}</div>` : ""}
     ${audios.map((f) => audioPlayer(f, f.name)).join("")}
-    ${rest.map((f) => `<a class="files__doc" href="${esc(f.url || "#")}" target="_blank" rel="noopener" download="${esc(f.name)}">📄 ${esc(f.name)} <span class="muted small">${f.size ? fmtSize(f.size) : ""}</span></a>`).join("")}
+    ${rest.map((f) => `<a class="files__doc" ${f.url ? src(f.url, "href") : 'href="#"'} target="_blank" rel="noopener" download="${esc(f.name)}">📄 ${esc(f.name)} <span class="muted small">${f.size ? fmtSize(f.size) : ""}</span></a>`).join("")}
   </div>`;
 }
 

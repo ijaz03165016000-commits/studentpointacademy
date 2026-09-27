@@ -133,9 +133,9 @@ export const SUBSCRIPTION = {
 export const CLASSROOM = {
   // classes that can join the online classroom (Play Group to Intermediate)
   eligible: ["PG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
-  maxFileMB: 10,           // per file (photos are shrunk automatically before upload)
+  maxFileMB: 2,            // per file — files are saved in Firestore (free plan); photos are shrunk automatically
   maxFiles: 6,             // per submission
-  maxVoiceSec: 180,        // longest voice note (3 minutes)
+  maxVoiceSec: 90,         // longest voice note (1½ minutes keeps it under 2 MB)
   kinds: {
     homework: { label: "Homework", icon: "book" },
     dua:      { label: "Dua & Qirat", icon: "star" },

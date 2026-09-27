@@ -3,6 +3,7 @@
    and approved by the admin in Portal → Admin → Online classroom. */
 import * as store from "../../../portal/js/store.js";
 import { loadOffer, fillOffer, classLabel } from "../offer.js";
+import { shrinkImage } from "../../../portal/js/classroom-kit.js";
 
 const $ = (id) => document.getElementById(id);
 const form = $("enrolForm"), err = $("enrolErr");
@@ -30,8 +31,8 @@ form.addEventListener("submit", async (e) => {
   if (!PHONE.test(v("ePhone"))) return showErr("WhatsApp number should look like 03XX-XXXXXXX.", $("ePhone"));
   if (!/^[A-Z0-9]{6,20}$/.test(tid)) return showErr("Enter the Transaction ID exactly as in the Easypaisa SMS (letters and numbers only).", $("eTid"));
   if (!PHONE.test(v("eSender"))) return showErr("'Paid from' number should look like 03XX-XXXXXXX.", $("eSender"));
-  const file = $("eReceipt").files[0];
-  if (file && file.size > 5 * 1024 * 1024) return showErr("The screenshot must be smaller than 5 MB.", $("eReceipt"));
+  const file = $("eReceipt").files[0] ? await shrinkImage($("eReceipt").files[0]) : null;
+  if (file && file.size > 2 * 1024 * 1024) return showErr("The screenshot must be smaller than 2 MB.", $("eReceipt"));
 
   const btn = form.querySelector("[type=submit]"); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
   try {

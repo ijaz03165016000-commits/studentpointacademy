@@ -442,7 +442,11 @@ export function adminClassroom(byName) {
     </tbody></table></div>` : empty(status === "pending" ? "No new enrolments. Share classroom.html on WhatsApp to get more!" : "Nothing here", "school"))}`;
     $$("[data-tab]").forEach((b) => (b.onclick = () => go(b.dataset.tab)));
     $("#es").onchange = (e) => go("enrol", "&s=" + e.target.value);
-    $$("[data-rc]").forEach((b) => (b.onclick = async () => { const x = all.find((y) => y.id === b.dataset.rc); try { const u = await store.fileUrl(x.receipt); u ? window.open(u, "_blank", "noopener") : toast("Receipt not available", true); } catch (e) { toast(e.message, true); } }));
+    $$("[data-rc]").forEach((b) => (b.onclick = async () => {
+      const x = all.find((y) => y.id === b.dataset.rc), w = window.open("", "_blank");   // open now so the pop-up isn't blocked
+      try { const u = await store.fileUrl(x.receipt); if (!u) throw new Error("Receipt not available"); if (w) w.location.href = u; else window.open(u, "_blank"); }
+      catch (e) { w?.close(); toast(e.message, true); }
+    }));
     $$("[data-no]").forEach((b) => (b.onclick = () => {
       const x = all.find((y) => y.id === b.dataset.no);
       dialog({ title: "Reject — " + x.studentName, submit: "Reject", body: field("rr", "Reason", `<select id="rr" name="reason">${options(["TID not found in EasyPaisa", "Amount received is less", "Class not included in the offer", "Duplicate enrolment"])}</select>`),

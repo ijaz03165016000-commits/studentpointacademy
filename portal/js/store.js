@@ -37,15 +37,6 @@ function fb() {
   return fbP;
 }
 
-let stP = null;
-function fbStorage() {
-  if (!stP) stP = (async () => {
-    const [{ appMod }, st] = await Promise.all([fb(), import(FB("storage"))]);
-    return { st, storage: st.getStorage(appMod.getApp()) };
-  })();
-  return stP;
-}
-
 /* ---------------- Demo store (localStorage) ---------------- */
 const PREFIX = "spa_portal_";
 const SEED_VERSION = "spa2";
@@ -175,44 +166,61 @@ export async function remove(col, id) {
 
 /* ==========================================================
    Files (homework photos, PDFs, voice notes)
-   • Signed-in users: Storage path classroom/{uid}/… and the
-     download URL is kept in the database record.
-   • Visitors (enrolment receipt): enrol-receipts/… — they can
-     upload but not read back; the admin opens it with fileUrl().
-   • Demo mode: the file is kept inside the record as a data URL.
-   Returns { name, type, size, url } or { …, path } for visitor uploads.
+   Saved INSIDE Firestore (works on the free Spark plan — no
+   Firebase Storage needed): files/{id} holds the details and
+   files/{id}/parts/{n} hold the file in pieces of ~500 KB.
+   Records keep url: "fs:<id>"; pages turn that into a playable
+   link with fsUrl(). Visitor uploads (enrolment receipt) are
+   marked owner "visitor" — only the admin can open them.
+   Demo mode: the file is kept inside the record as a data URL.
    ========================================================== */
+export const LIVE_MAX = 2 * 1024 * 1024;     // 2 MB per file
 const DEMO_MAX = 900 * 1024;
+const CHUNK = 700000;                       // base64 characters per part (< 1 MB Firestore limit)
 const readAsDataURL = (file) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(file); });
 
 export async function uploadFile(file, { visitor = false } = {}) {
   const meta = { name: String(file.name || "file").slice(0, 80), type: file.type || "application/octet-stream", size: file.size };
   if (IS_LIVE) {
-    const [{ auth }, { st, storage }] = await Promise.all([fb(), fbStorage()]);
-    const safe = meta.name.replace(/[^\w.-]+/g, "_");
-    const rnd = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    if (visitor) {
-      const path = `enrol-receipts/${rnd}_${safe}`;
-      await st.uploadBytes(st.ref(storage, path), file, { contentType: meta.type });
-      return { ...meta, path };
-    }
-    const uid = auth.currentUser?.uid;
-    if (!uid) throw new Error("Please sign in again to upload files.");
-    const r = st.ref(storage, `classroom/${uid}/${rnd}_${safe}`);
-    await st.uploadBytes(r, file, { contentType: meta.type });
-    return { ...meta, url: await st.getDownloadURL(r) };
+    if (file.size > LIVE_MAX) throw new Error(`“${meta.name}” is too big (limit 2 MB). Use a smaller photo, or a shorter voice note.`);
+    const { fs, db, auth } = await fb();
+    const owner = visitor ? "visitor" : auth.currentUser?.uid;
+    if (!owner) throw new Error("Please sign in again to upload files.");
+    const url = await readAsDataURL(file);
+    const b64 = url.slice(url.indexOf(",") + 1);
+    const n = Math.max(1, Math.ceil(b64.length / CHUNK));
+    const ref = fs.doc(fs.collection(db, "files"));
+    await fs.setDoc(ref, { owner, name: meta.name, type: meta.type.split(";")[0], bytes: file.size, chunks: n, createdAt: new Date().toISOString() });
+    for (let i = 0; i < n; i++) await fs.setDoc(fs.doc(db, "files", ref.id, "parts", String(i)), { d: b64.slice(i * CHUNK, (i + 1) * CHUNK) });
+    return { ...meta, url: "fs:" + ref.id };
   }
-  if (file.size > DEMO_MAX) throw new Error(`“${meta.name}” is too big for demo mode (limit 900 KB). The live site allows bigger files.`);
+  if (file.size > DEMO_MAX) throw new Error(`“${meta.name}” is too big for demo mode (limit 900 KB).`);
   return { ...meta, url: await readAsDataURL(file) };
 }
 
-/* Download link for a visitor upload (admin only) */
+/* "fs:<id>" → a blob: URL the browser can play / show / download */
+const fsCache = new Map();
+export function fsUrl(url) {
+  if (!String(url).startsWith("fs:")) return Promise.resolve(url);
+  const id = url.slice(3);
+  if (!fsCache.has(id)) fsCache.set(id, (async () => {
+    const { fs, db } = await fb();
+    const head = await fs.getDoc(fs.doc(db, "files", id));
+    if (!head.exists()) throw new Error("File not found");
+    const parts = await fs.getDocs(fs.collection(db, "files", id, "parts"));
+    const b64 = parts.docs.sort((a, b) => Number(a.id) - Number(b.id)).map((d) => d.data().d).join("");
+    const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: head.data().type || "application/octet-stream" }));
+  })().catch((e) => { fsCache.delete(id); throw e; }));
+  return fsCache.get(id);
+}
+
+/* Link for a stored file (used by the admin for enrolment receipts) */
 export async function fileUrl(f) {
   if (!f) return "";
-  if (f.url) return f.url;
-  if (!IS_LIVE || !f.path) return "";
-  const { st, storage } = await fbStorage();
-  return st.getDownloadURL(st.ref(storage, f.path));
+  if (f.url) return fsUrl(f.url);
+  return "";
 }
 
 /* ==========================================================

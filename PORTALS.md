@@ -65,7 +65,8 @@ A paid add-on for students who learn from home. **The offer is live-editable:** 
 
 - Existing students can join from the portal (Online classroom page, or the plan choice on the payment screen). Renewals are at the price they joined with.
 - Voice notes are recorded in the browser (microphone permission needed) or picked as an audio file; photos are shrunk automatically. Limits are in `portal/js/school.js` → `CLASSROOM`.
-- **After updating, publish both `firestore.rules` and `storage.rules` again** (new collections: `settings`, `classroomEnrollments`, `classPosts`, `classWork`, `classChat`; new storage folders `classroom/` and `enrol-receipts/`).
+- **Files (photos, PDFs, voice notes) are saved inside Firestore** in the `files` collection, so the free Spark plan is enough — no Firebase Storage needed. Limit 2 MB per file; voice notes up to 1½ minutes; photos are shrunk automatically. The free plan holds 1 GB (roughly 3,000–5,000 submissions); delete old `files` in the console each term if it fills up.
+- **After updating, publish `firestore.rules` again** (new collections: `settings`, `classroomEnrollments`, `classPosts`, `classWork`, `classChat`, `files`).
 - Demo: student `SPA-0102` (Class 5) is on the classroom plan; tutor `T05` posts Duas, `T04` homework; one website enrolment waits for the admin.
 
 ## ID card QR verification

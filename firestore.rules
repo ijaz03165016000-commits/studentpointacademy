@@ -212,6 +212,24 @@ service cloud.firestore {
                     || (online() && resource.data.studentId == me().linkId && onlyChanges(['seen']));
       allow delete: if isOffice();
     }
+    // Uploaded files (homework photos, PDFs, voice notes, enrolment receipts), stored in
+    // Firestore in pieces: files/{id} + files/{id}/parts/{n}. Max 2 MB (4 parts).
+    match /files/{fid} {
+      allow read: if hasProfile() && (resource.data.owner != 'visitor' || isAdmin());
+      allow create: if request.resource.data.chunks is int && request.resource.data.chunks >= 1 && request.resource.data.chunks <= 4
+                    && request.resource.data.bytes is int && request.resource.data.bytes <= 2097152
+                    && ((signedIn() && request.resource.data.owner == request.auth.uid)
+                        || (request.resource.data.owner == 'visitor' && request.resource.data.type.matches('image/.*|application/pdf')));
+      allow delete: if isOffice() || (signedIn() && resource.data.owner == request.auth.uid);
+      match /parts/{n} {
+        function head() { return get(/databases/$(database)/documents/files/$(fid)).data; }
+        allow read: if hasProfile() && (head().owner != 'visitor' || isAdmin());
+        allow create: if request.resource.data.keys().hasOnly(['d']) && request.resource.data.d is string
+                      && request.resource.data.d.size() <= 700000 && int(n) < head().chunks
+                      && ((signedIn() && head().owner == request.auth.uid) || head().owner == 'visitor');
+        allow delete: if isOffice();
+      }
+    }
     // Student ↔ tutor chat with voice notes
     match /classChat/{id} {
       function party(d) {
