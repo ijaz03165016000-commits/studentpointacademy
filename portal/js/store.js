@@ -37,9 +37,18 @@ function fb() {
   return fbP;
 }
 
+let stP = null;
+function fbStorage() {
+  if (!stP) stP = (async () => {
+    const [{ appMod }, st] = await Promise.all([fb(), import(FB("storage"))]);
+    return { st, storage: st.getStorage(appMod.getApp()) };
+  })();
+  return stP;
+}
+
 /* ---------------- Demo store (localStorage) ---------------- */
 const PREFIX = "spa_portal_";
-const SEED_VERSION = "spa1";
+const SEED_VERSION = "spa2";
 const mem = {};            // fallback if storage is blocked
 function lsGet(col) {
   try { const v = localStorage.getItem(PREFIX + col); if (v) return JSON.parse(v); } catch {}
@@ -162,6 +171,48 @@ export async function remove(col, id) {
   }
   await ensureSeed();
   const all = lsGet(col); delete all[id]; lsSet(col, all);
+}
+
+/* ==========================================================
+   Files (homework photos, PDFs, voice notes)
+   • Signed-in users: Storage path classroom/{uid}/… and the
+     download URL is kept in the database record.
+   • Visitors (enrolment receipt): enrol-receipts/… — they can
+     upload but not read back; the admin opens it with fileUrl().
+   • Demo mode: the file is kept inside the record as a data URL.
+   Returns { name, type, size, url } or { …, path } for visitor uploads.
+   ========================================================== */
+const DEMO_MAX = 900 * 1024;
+const readAsDataURL = (file) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(file); });
+
+export async function uploadFile(file, { visitor = false } = {}) {
+  const meta = { name: String(file.name || "file").slice(0, 80), type: file.type || "application/octet-stream", size: file.size };
+  if (IS_LIVE) {
+    const [{ auth }, { st, storage }] = await Promise.all([fb(), fbStorage()]);
+    const safe = meta.name.replace(/[^\w.-]+/g, "_");
+    const rnd = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    if (visitor) {
+      const path = `enrol-receipts/${rnd}_${safe}`;
+      await st.uploadBytes(st.ref(storage, path), file, { contentType: meta.type });
+      return { ...meta, path };
+    }
+    const uid = auth.currentUser?.uid;
+    if (!uid) throw new Error("Please sign in again to upload files.");
+    const r = st.ref(storage, `classroom/${uid}/${rnd}_${safe}`);
+    await st.uploadBytes(r, file, { contentType: meta.type });
+    return { ...meta, url: await st.getDownloadURL(r) };
+  }
+  if (file.size > DEMO_MAX) throw new Error(`“${meta.name}” is too big for demo mode (limit 900 KB). The live site allows bigger files.`);
+  return { ...meta, url: await readAsDataURL(file) };
+}
+
+/* Download link for a visitor upload (admin only) */
+export async function fileUrl(f) {
+  if (!f) return "";
+  if (f.url) return f.url;
+  if (!IS_LIVE || !f.path) return "";
+  const { st, storage } = await fbStorage();
+  return st.getDownloadURL(st.ref(storage, f.path));
 }
 
 /* ==========================================================

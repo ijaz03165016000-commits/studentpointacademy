@@ -5,12 +5,15 @@ import { fmtDate } from "../ui.js";
 import { studentViews, noticesView, profileView } from "./shared.js";
 import { renewBanner, subscriptionPage } from "./subscribe.js";
 import { idCardPage } from "./idcard.js";
+import { studentClassroom, studentCounts } from "./classroom.js";
 
 let sid, me;
 export function init(user) { me = user; sid = user.linkId || user.id; }
 
 export const nav = [
   { id: "home", label: "Dashboard", icon: "home" },
+  { id: "classroom", label: "Online classroom", icon: "school" },
+  { id: "cchat", label: "Voice chat", icon: "chat" },
   { id: "attendance", label: "Attendance", icon: "checklist" },
   { id: "results", label: "Results", icon: "chart" },
   { id: "timetable", label: "Timetable", icon: "calendar" },
@@ -23,8 +26,10 @@ export const nav = [
 ];
 
 const sv = studentViews(() => sid, { header: () => (me && ["", "#/", "#/home"].includes(location.hash.split("?")[0]) ? renewBanner(me) : "") });
+export const parentOf = { task: "classroom" };
 export const views = {
   ...sv,
+  ...studentClassroom(),
   subscription: subscriptionPage,
   idcard: idCardPage("student"),
   notices: noticesView("students"),
@@ -33,3 +38,5 @@ export const views = {
     return [["Student ID", sid], ["Class", className(s.classId)], ["Roll no.", s.rollNo], ["Father's name", s.fatherName], ["Date of birth", fmtDate(s.dob)], ["Phone", s.phone], ["Address", s.address], ["Admitted", fmtDate(s.admissionDate)]];
   })
 };
+
+export async function counts(user) { try { return await studentCounts(user); } catch { return {}; } }

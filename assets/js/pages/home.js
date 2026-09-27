@@ -28,3 +28,13 @@ window.addEventListener("spa:form", (e) => {
   if (clean.phone) clean.phone = clean.phone.replace(/\s/g, "");
   addInquiry(clean, file).catch((err) => console.warn("Could not save form entry:", err));
 });
+
+/* Online Classroom offer: section, strip under the menu, and a one-time pop-up.
+   All values come from the admin's offer settings. */
+import("../offer.js").then(async ({ loadOffer, fillOffer, offerStrip, offerPopup }) => {
+  const o = await loadOffer();
+  const band = document.getElementById("online-class");
+  if (band && o.active) { fillOffer(band, o); band.hidden = false; }
+  offerStrip(o);
+  offerPopup(o);
+}).catch((e) => console.warn("Offer could not be loaded:", e));

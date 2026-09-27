@@ -52,6 +52,22 @@ Students need an active subscription before their portal opens (parents, tutors,
 The student pays Rs. 200 to EasyPaisa **0344-0807888** and enters the Transaction ID. Admin → **Portal subscriptions** → check the TID in your EasyPaisa app → **Approve** (30 days) or **Reject**. Cash or free access: *Record cash / manual payment*.
 To switch this off, set `enabled: false` in `portal/js/school.js` → `SUBSCRIPTION`.
 
+## Online Classroom (Play Group – Intermediate)
+
+A paid add-on for students who learn from home. **The offer is live-editable:** Admin → **Online classroom** → *Offer & website banner* (price, crossed-out price, end date with countdown, seat limit, classes, perks, on/off).
+
+| Who | What they can do |
+|---|---|
+| **Visitors** | See the offer on the home page (section, strip under the menu, one-time pop-up) and at `classroom.html`; pay by EasyPaisa and send the enrolment form with the TID |
+| **Admin** | Online classroom → *Enrolments* → check the TID → **Approve** (creates the student + parent login, opens the classroom, button to send the login on WhatsApp) or Reject |
+| **Student** | *Online classroom*: homework, Dua & Qirat and lesson posts; submit photos / PDF / a recorded voice note; see stars, written and voice feedback. *Voice chat*: text and voice messages with their teachers |
+| **Tutor** | *Online classroom*: new post (homework / Dua & Qirat / lesson) with Arabic text, own voice recording and worksheets; check submissions, give stars + written or voice feedback, or ask to redo. *Student voice chat* |
+
+- Existing students can join from the portal (Online classroom page, or the plan choice on the payment screen). Renewals are at the price they joined with.
+- Voice notes are recorded in the browser (microphone permission needed) or picked as an audio file; photos are shrunk automatically. Limits are in `portal/js/school.js` → `CLASSROOM`.
+- **After updating, publish both `firestore.rules` and `storage.rules` again** (new collections: `settings`, `classroomEnrollments`, `classPosts`, `classWork`, `classChat`; new storage folders `classroom/` and `enrol-receipts/`).
+- Demo: student `SPA-0102` (Class 5) is on the classroom plan; tutor `T05` posts Duas, `T04` homework; one website enrolment waits for the admin.
+
 ## ID card QR verification
 
 - **No principal's signature — QR verification instead.** The back of every issued card carries a QR code. Anyone (a guard, a board exam centre, another institution) scans it with a phone camera and `verify.html` on the academy website shows **Valid / Expired / Cancelled / Not found** with the holder's photo, name, class or designation and validity. Each card gets a random 12-character code, so cards can't be looked up by guessing IDs.
@@ -69,6 +85,8 @@ portal/
   js/store.js       database layer (Firebase or demo)
   js/school.js      classes, subjects, fees, slots
   js/demo-school.js sample data for demo mode
-  js/views/         student, parent, staff, principal, admin (+ shared, manage, idcard, subscribe)
+  js/views/         student, parent, staff, principal, admin (+ shared, manage, idcard, subscribe, classroom)
+  js/classroom-kit.js  offer loader, voice recorder, file uploads (also used by the website)
+classroom.html      public Online Classroom offer + enrolment form
 firestore.rules     security rules for website + portals
 ```

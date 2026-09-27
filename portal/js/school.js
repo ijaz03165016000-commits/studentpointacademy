@@ -125,6 +125,46 @@ export const SUBSCRIPTION = {
 };
 
 /* ==========================================================
+   Online Classroom (homework uploads, teacher feedback, voice notes,
+   Dua & Qirat learning). These are only the STARTING values of the offer:
+   the admin changes the live offer from Admin → Online classroom → Offer,
+   and the website and portal pick it up straight away.
+   ========================================================== */
+export const CLASSROOM = {
+  // classes that can join the online classroom (Play Group to Intermediate)
+  eligible: ["PG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+  maxFileMB: 10,           // per file (photos are shrunk automatically before upload)
+  maxFiles: 6,             // per submission
+  maxVoiceSec: 180,        // longest voice note (3 minutes)
+  kinds: {
+    homework: { label: "Homework", icon: "book" },
+    dua:      { label: "Dua & Qirat", icon: "star" },
+    lesson:   { label: "Lesson / notes", icon: "school" }
+  },
+  offer: {
+    active: true,
+    title: "Online Classroom — Special Offer",
+    tagline: "Upload homework, get teacher feedback, and learn Duas with voice notes — from home.",
+    price: 500,            // Rs. per month
+    oldPrice: 0,           // optional crossed-out price; 0 hides it
+    days: 30,
+    classes: ["PG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+    endsOn: "",            // YYYY-MM-DD — shows a countdown; empty = no end date
+    seats: 0,              // 0 = no seat limit
+    taken: 0,              // approved enrolments counted against seats
+    badge: "Limited-time offer",
+    perks: [
+      "Upload homework as photos, PDF or a voice note",
+      "Teacher checks it and sends written or voice feedback",
+      "Dua, Kalma & Qirat lessons with the teacher's voice",
+      "Send and receive voice messages with your teacher",
+      "Full student portal: results, attendance, timetable"
+    ]
+  }
+};
+export const classroomKind = (k) => CLASSROOM.kinds[k] || CLASSROOM.kinds.lesson;
+
+/* ==========================================================
    ID cards (student card / employee card)
    ========================================================== */
 export const ID_CARD = {

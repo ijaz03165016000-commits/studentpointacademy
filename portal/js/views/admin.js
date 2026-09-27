@@ -5,6 +5,7 @@ import { $, $$, esc, icon, kpi, card, empty, pill, person, bars, toast, dialog, 
 import { profileView } from "./shared.js";
 import { subscriptionsAdmin, pendingCount } from "./subscribe.js";
 import { idCardPage } from "./idcard.js";
+import { adminClassroom, pendingEnrolments } from "./classroom.js";
 import { snapshot, schoolCharts, studentsView, attendanceOverview, resultsOverview, feesView, noticesManager, staffView, timetableView } from "./manage.js";
 
 let me;
@@ -18,6 +19,7 @@ export const nav = [
   { id: "staff", label: "Staff", icon: "teacher" },
   { id: "accounts", label: "Logins & passwords", icon: "shield" },
   { label: "Academy" },
+  { id: "enrolments", label: "Online classroom", icon: "school" },
   { id: "subscriptions", label: "Portal subscriptions", icon: "star" },
   { id: "fees", label: "Fees", icon: "money" },
   { id: "attendance", label: "Attendance", icon: "checklist" },
@@ -121,7 +123,11 @@ export const views = {
   timetable: timetableView({ canEdit: true }),
   notices: noticesManager("Academy Office"),
   subscriptions: (ctx) => subscriptionsAdmin(me.name)(ctx),
+  enrolments: (ctx) => adminClassroom(me.name)(ctx),
   profile: profileView(async (u) => [["Login ID", u.loginId], ["Role", "Admin"]])
 };
 
-export async function counts() { return { subscriptions: await pendingCount() }; }
+export async function counts() {
+  const [s, e] = await Promise.all([pendingCount(), pendingEnrolments().catch(() => 0)]);
+  return { subscriptions: s, enrolments: e };
+}

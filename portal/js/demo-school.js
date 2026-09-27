@@ -265,5 +265,28 @@ export function buildDemoSchool() {
     subscriptions["TID-" + tid] = { userId: sid, studentId: sid, name: u.name, classId: u.classId, amount: 200, method: "EasyPaisa", tid: String(tid), sender: `034${k}${between(1000000, 9999999)}`, submittedAt: iso(addDays(now, -k)), status: "pending" };
   });
 
-  return { users, students, staff, timetable, attendance, staffAttendance, exams, homework, fees, leaves, notices, messages, subscriptions };
+  /* ---- Online Classroom ---- */
+  // Ayesha (Class 5) is on the Online Classroom plan; so are two class-mates.
+  const classPosts = {}, classWork = {}, classChat = {}, classroomEnrollments = {};
+  const online5 = [kidB, ...(byClass["5"] || []).filter((x) => x !== kidB).slice(0, 2)];
+  online5.forEach((sid) => { students[sid].online = true; Object.assign(users[sid], { plan: "classroom", planPrice: 500 }); });
+  const ts = (off, h) => at(off, h);
+  classPosts.cp1 = { classId: "5", kind: "dua", subject: "Quran & Duas", title: "Dua before sleeping", teacherId: "T05", teacherName: staff.T05.name, createdAt: ts(-2, 16),
+    text: "Listen to the Dua, repeat it 5 times, then record yourself and send it to me. Meaning: “O Allah, in Your name I die and I live.”",
+    arabic: "اَللّٰهُمَّ بِاسْمِكَ اَمُوْتُ وَاَحْيَا", due: iso(addDays(now, 2)), files: [], audio: null };
+  classPosts.cp2 = { classId: "5", kind: "homework", subject: "Mathematics", title: "Exercise 4.2 — Q1 to Q10 (fractions)", teacherId: "T04", teacherName: staff.T04.name, createdAt: ts(-3, 17),
+    text: "Solve in your notebook, take clear photos of each page and upload them here.", due: iso(addDays(now, -1)), files: [], audio: null };
+  classPosts.cp3 = { classId: "5", kind: "homework", subject: "English", title: "Write 5 sentences about your family", teacherId: "T04", teacherName: staff.T04.name, createdAt: ts(-1, 18),
+    text: "Use capital letters and full stops. You can also read them aloud and send a voice note.", due: iso(addDays(now, 3)), files: [], audio: null };
+  classPosts.cp4 = { classId: "5", kind: "lesson", subject: "Islamiat", title: "Six Kalimas — meaning sheet", teacherId: "T05", teacherName: staff.T05.name, createdAt: ts(-5, 16),
+    text: "Read the meanings of the Six Kalimas with your parents this week. Ask me in Voice chat if anything is unclear.", files: [], audio: null };
+  classWork[`cp2_${kidB}`] = { postId: "cp2", classId: "5", kind: "homework", postTitle: classPosts.cp2.title, teacherId: "T04", studentId: kidB, studentName: students[kidB].name,
+    text: "I did all 10. Q7 was difficult.", files: [], audio: null, submittedAt: ts(-2, 19), status: "reviewed", seen: false,
+    feedback: { text: "Very good Ayesha! 9 out of 10 correct. In Q7 first make the denominators the same, then add.", stars: 4, audio: null, by: staff.T04.name, at: ts(-1, 17) } };
+  if (online5[1]) classWork[`cp2_${online5[1]}`] = { postId: "cp2", classId: "5", kind: "homework", postTitle: classPosts.cp2.title, teacherId: "T04", studentId: online5[1], studentName: students[online5[1]].name,
+    text: "Sir, here is my homework.", files: [], audio: null, submittedAt: ts(-1, 20), status: "submitted" };
+  classChat.cc1 = { studentId: kidB, teacherId: "T05", from: "staff", text: "Assalam o Alaikum Ayesha! This week we are learning the Dua before sleeping. Listen to it in the Classroom tab.", audio: null, files: [], at: ts(-2, 16), read: false };
+  classroomEnrollments["ENR-41823977001"] = { studentName: "Zoya Shahid", fatherName: "Mirza Shahid", classId: "3", gender: "F", phone: "0345-6789012", city: "Mirpur AJK", tid: "41823977001", sender: "0345-6789012", amount: 500, method: "EasyPaisa", status: "pending", submittedAt: iso(now), submittedAtTs: now.toISOString(), source: "website" };
+
+  return { users, students, staff, timetable, attendance, staffAttendance, exams, homework, fees, leaves, notices, messages, subscriptions, classPosts, classWork, classChat, classroomEnrollments };
 }

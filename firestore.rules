@@ -31,6 +31,12 @@ service cloud.firestore {
       return (role() == 'student' && me().classId == cid && paid())
           || (role() == 'parent' && cid in me().get('childClassIds', []));
     }
+    // Online Classroom: students on the classroom plan (set by the admin when a payment is approved)
+    function online() { return role() == 'student' && me().get('plan', '') == 'classroom' && paid(); }
+    function inClassroom(cid) {
+      return (online() && me().classId == cid)
+          || (role() == 'parent' && cid in me().get('childClassIds', []));
+    }
     function onlyChanges(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
 
     /* ---------------- Public website ---------------- */
@@ -148,10 +154,12 @@ service cloud.firestore {
     }
     match /subscriptions/{id} {
       // a student submits a payment for verification; the document ID is the TID, so a TID can only be used once
-      allow create: if role() == 'student'
+      // (the admin also creates payments: cash / manual entries and website enrolments)
+      allow create: if isAdmin() || (role() == 'student'
                     && request.resource.data.userId == request.auth.uid
                     && request.resource.data.status == 'pending'
-                    && !exists(/databases/$(database)/documents/subscriptions/$(id));
+                    && request.resource.data.get('plan', 'portal') in ['portal', 'classroom']
+                    && !exists(/databases/$(database)/documents/subscriptions/$(id)));
       allow read: if isAdmin() || (role() == 'student' && resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin();
     }
@@ -165,6 +173,57 @@ service cloud.firestore {
                     && ((role() == 'parent' && request.resource.data.from == 'parent') || (isStaff() && request.resource.data.from == 'staff'))
                     && request.resource.data.text is string && request.resource.data.text.size() <= 1000;
       allow update: if isParty(resource.data) && onlyChanges(['read']);
+    }
+
+    /* ---------------- Online Classroom ---------------- */
+    // The offer shown on the website (price, end date, seats…): public, admin edits.
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Enrolment form on classroom.html: visitors can only add one (ID = ENR-<TID>, so a TID is used once).
+    match /classroomEnrollments/{id} {
+      allow create: if request.resource.data.status == 'pending'
+                    && id == 'ENR-' + request.resource.data.tid
+                    && request.resource.data.studentName is string && request.resource.data.studentName.size() < 80
+                    && request.resource.data.phone is string && request.resource.data.phone.size() < 20
+                    && request.resource.data.tid is string && request.resource.data.tid.size() < 24
+                    && request.resource.data.size() < 30;
+      allow read, update, delete: if isAdmin();
+    }
+    // Homework / Dua / lesson posts by tutors, for one class
+    match /classPosts/{id} {
+      allow read: if isTeam() || inClassroom(resource.data.classId);
+      allow create: if isOffice() || (isStaff() && request.resource.data.teacherId == me().linkId);
+      allow update, delete: if isOffice() || (isStaff() && resource.data.teacherId == me().linkId);
+    }
+    // A student's submission for a post (ID = <postId>_<studentId>) and the tutor's feedback
+    match /classWork/{id} {
+      allow read: if isTeam() || (online() && resource.data.studentId == me().linkId) || isParentOf(resource.data.studentId);
+      allow create: if online() && request.resource.data.studentId == me().linkId
+                    && id == request.resource.data.postId + '_' + request.resource.data.studentId
+                    && request.resource.data.status == 'submitted'
+                    && !('feedback' in request.resource.data);
+      allow update: if isOffice()
+                    || (isStaff() && resource.data.teacherId == me().linkId && onlyChanges(['feedback', 'status']))
+                    || (online() && resource.data.studentId == me().linkId && resource.data.status != 'reviewed'
+                        && request.resource.data.status == 'submitted'
+                        && onlyChanges(['text', 'files', 'audio', 'submittedAt', 'status']))
+                    || (online() && resource.data.studentId == me().linkId && onlyChanges(['seen']));
+      allow delete: if isOffice();
+    }
+    // Student ↔ tutor chat with voice notes
+    match /classChat/{id} {
+      function party(d) {
+        return (online() && d.studentId == me().linkId) || (isStaff() && d.teacherId == me().linkId);
+      }
+      allow read: if party(resource.data) || isOffice() || isParentOf(resource.data.studentId);
+      allow create: if party(request.resource.data)
+                    && ((role() == 'student' && request.resource.data.from == 'student') || (isStaff() && request.resource.data.from == 'staff'))
+                    && request.resource.data.get('text', '') is string && request.resource.data.get('text', '').size() <= 1000
+                    && request.resource.data.read == false;
+      allow update: if party(resource.data) && onlyChanges(['read']);
+      allow delete: if isOffice();
     }
   }
 }

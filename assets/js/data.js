@@ -21,7 +21,8 @@ function firebase() {
       const [appMod, fs, st, au] = await Promise.all([
         import(FB("app")), import(FB("firestore")), import(FB("storage")), import(FB("auth"))
       ]);
-      const app = appMod.initializeApp(FIREBASE_CONFIG);
+      // the portal data layer may already have started Firebase on the same page
+      const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(FIREBASE_CONFIG);
       return { fs, st, au, db: fs.getFirestore(app), storage: st.getStorage(app), auth: au.getAuth(app) };
     })();
   }

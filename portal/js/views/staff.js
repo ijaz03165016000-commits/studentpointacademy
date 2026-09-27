@@ -6,6 +6,7 @@ import {
   fmtDate, dayBox, today, dayName, attendanceStats, examResult, pct
 } from "../ui.js";
 import { idCardPage } from "./idcard.js";
+import { staffClassroom, staffCounts } from "./classroom.js";
 import { timetableGrid, todayList, noticesView, noticeList, noticesFor, profileView, messagesView, unreadCount, currentPeriod } from "./shared.js";
 
 let me, myId, myClasses = [];
@@ -20,6 +21,8 @@ export async function init(user) {
 
 export const nav = [
   { id: "home", label: "Dashboard", icon: "home" },
+  { id: "classroom", label: "Online classroom", icon: "school" },
+  { id: "cchat", label: "Student voice chat", icon: "chat" },
   { id: "attendance", label: "Mark attendance", icon: "checklist" },
   { id: "marks", label: "Enter marks", icon: "edit" },
   { id: "homework", label: "Homework diary", icon: "book" },
@@ -304,7 +307,9 @@ async function leaves({ el, user }) {
   };
 }
 
+export const parentOf = { cpost: "classroom" };
 export const views = {
+  ...staffClassroom(() => ({ me, myId, myClasses })),
   home, attendance, marks, homework, timetable, students, leaves,
   idcard: idCardPage("staff"),
   messages: messagesView({ side: "staff" }),
@@ -313,6 +318,6 @@ export const views = {
 };
 
 export async function counts() {
-  const [m, l] = await Promise.all([unreadCount("staff", myId), me.classTeacherOf ? store.list("leaves", { classId: me.classTeacherOf, status: "pending" }) : []]);
-  return { messages: m, leaves: l.length };
+  const [m, l, c] = await Promise.all([unreadCount("staff", myId), me.classTeacherOf ? store.list("leaves", { classId: me.classTeacherOf, status: "pending" }) : [], staffCounts(myId).catch(() => ({}))]);
+  return { messages: m, leaves: l.length, ...c };
 }

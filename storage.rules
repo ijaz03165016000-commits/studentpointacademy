@@ -20,6 +20,21 @@ service firebase.storage {
       allow create: if smallFile() && request.resource.contentType.matches('image/.*|application/pdf');
       allow read, delete: if isAdmin();
     }
+    // Online Classroom: homework photos/PDFs and voice notes. Each signed-in user
+    // uploads only into their own folder; file names are random, and the links are
+    // kept in records that only the right student/tutor can read.
+    match /classroom/{uid}/{f} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.size < 10 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*|audio/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // Payment screenshot sent with the Online Classroom enrolment form
+    match /enrol-receipts/{f} {
+      allow create: if smallFile() && request.resource.contentType.matches('image/.*|application/pdf');
+      allow read, delete: if isAdmin();
+    }
     match /cvs/{f} {
       allow create: if smallFile() && request.resource.contentType.matches('image/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       allow read, delete: if isAdmin();
