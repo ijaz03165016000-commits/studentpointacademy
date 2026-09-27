@@ -39,7 +39,7 @@ function fb() {
 
 /* ---------------- Demo store (localStorage) ---------------- */
 const PREFIX = "spa_portal_";
-const SEED_VERSION = "spa2";
+const SEED_VERSION = "spa3";
 const mem = {};            // fallback if storage is blocked
 function lsGet(col) {
   try { const v = localStorage.getItem(PREFIX + col); if (v) return JSON.parse(v); } catch {}

@@ -3,6 +3,7 @@
    and approved by the admin in Portal → Admin → Online classroom. */
 import * as store from "../../../portal/js/store.js";
 import { loadOffer, fillOffer, classLabel } from "../offer.js";
+import { priceFor, bandFor } from "../../../portal/js/classroom-kit.js";
 import { shrinkImage } from "../../../portal/js/classroom-kit.js";
 
 const $ = (id) => document.getElementById(id);
@@ -16,8 +17,29 @@ loadOffer().then((o) => {
     form.querySelectorAll("input,select,button").forEach((x) => (x.disabled = true));
     showErr(document.querySelector('[data-o="closed"]').textContent);
   }
-  form.dataset.price = o.price;
+  offer = o;
+  $("eTier").innerHTML = o.tiers.map((t) => `<option value="${t.id}"${t.id === "gold" ? " selected" : ""}>${t.name}</option>`).join("");
+  $("eClass").onchange = $("eTier").onchange = showAmount;
+  // "Choose Gold" etc. on the package cards → fill the form and jump to it
+  document.addEventListener("spa:package", (e) => {
+    const { tier, classId } = e.detail;
+    $("eTier").value = tier;
+    if (!v0("eClass") || bandFor(o, v0("eClass"))?.id !== e.detail.band) $("eClass").value = classId;
+    showAmount();
+    $("enrol").scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => $("eName").focus({ preventScroll: true }), 600);
+  });
 }).catch(() => showErr("The offer could not be loaded. Refresh the page, or message us on WhatsApp."));
+
+let offer = null;
+const v0 = (id) => $(id).value.trim();
+const amount = () => offer && v0("eClass") ? priceFor(offer, v0("eClass"), v0("eTier")) : 0;
+function showAmount() {
+  const a = amount(), t = offer?.tiers.find((x) => x.id === v0("eTier"));
+  $("eAmtBox").hidden = !a;
+  $("eAmt").textContent = a ? `Rs. ${a.toLocaleString("en-PK")} (${t?.name} package, ${bandFor(offer, v0("eClass"))?.label})` : "";
+  $("payAmt").textContent = a ? `Rs. ${a.toLocaleString("en-PK")}` : "Choose class & package";
+}
 
 const PHONE = /^03\d{2}-?\d{7}$/;
 form.addEventListener("submit", async (e) => {
@@ -28,6 +50,7 @@ form.addEventListener("submit", async (e) => {
   if (!v("eName")) return showErr("Please write the student's name.", $("eName"));
   if (!v("eFather")) return showErr("Please write the father's / guardian's name.", $("eFather"));
   if (!v("eClass")) return showErr("Please select the class.", $("eClass"));
+  if (!amount()) return showErr("This package is not available for the selected class. Choose another package.", $("eTier"));
   if (!PHONE.test(v("ePhone"))) return showErr("WhatsApp number should look like 03XX-XXXXXXX.", $("ePhone"));
   if (!/^[A-Z0-9]{6,20}$/.test(tid)) return showErr("Enter the Transaction ID exactly as in the Easypaisa SMS (letters and numbers only).", $("eTid"));
   if (!PHONE.test(v("eSender"))) return showErr("'Paid from' number should look like 03XX-XXXXXXX.", $("eSender"));
@@ -36,10 +59,10 @@ form.addEventListener("submit", async (e) => {
 
   const btn = form.querySelector("[type=submit]"); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
   try {
-    const price = Number(form.dataset.price) || 500;
+    const price = amount(), tierName = offer.tiers.find((x) => x.id === v("eTier"))?.name || v("eTier");
     const data = {
       studentName: v("eName"), fatherName: v("eFather"), classId: v("eClass"), gender: v("eGender"),
-      phone: v("ePhone"), city: v("eCity"), tid, sender: v("eSender"), amount: price, method: "EasyPaisa",
+      phone: v("ePhone"), city: v("eCity"), tid, sender: v("eSender"), tier: v("eTier"), amount: price, method: "EasyPaisa",
       status: "pending", submittedAt: new Date().toISOString().slice(0, 10), submittedAtTs: new Date().toISOString(), source: "website"
     };
     if (file) { try { data.receipt = await store.uploadFile(file, { visitor: true }); } catch (x) { console.warn("Receipt upload failed", x); } }
@@ -47,7 +70,7 @@ form.addEventListener("submit", async (e) => {
     if (!store.IS_LIVE && await store.get("classroomEnrollments", id)) throw new Error("dup");
     await store.set("classroomEnrollments", id, data).catch((x) => { throw /permission|insufficient/i.test(x.code || x.message) ? new Error("dup") : x; });
 
-    const msg = `Assalam o Alaikum! I have enrolled in the Online Classroom.\n\nStudent: ${data.studentName}\nFather: ${data.fatherName}\nClass: ${classLabel(data.classId)}\nWhatsApp: ${data.phone}\nPaid: Rs. ${price} (Easypaisa)\nTID: ${tid}\nFrom: ${data.sender}`;
+    const msg = `Assalam o Alaikum! I have enrolled in the Online Classroom.\n\nStudent: ${data.studentName}\nFather: ${data.fatherName}\nClass: ${classLabel(data.classId)}\nWhatsApp: ${data.phone}\nPackage: ${tierName}\nPaid: Rs. ${price} (Easypaisa)\nTID: ${tid}\nFrom: ${data.sender}`;
     $("doneTo").textContent = data.phone;
     $("doneWa").href = "https://wa.me/923440807888?text=" + encodeURIComponent(msg);
     form.hidden = true; $("enrolDone").hidden = false;

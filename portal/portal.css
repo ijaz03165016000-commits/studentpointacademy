@@ -540,3 +540,6 @@ dialog.dlg::backdrop { background: rgba(30,58,138,.45); }
   .files__imgs img { width: 88px; height: 88px; }
   .star-pick label { font-size: 2.3rem; }
 }
+.plan--silver:has(input:checked) { border-color: #94A3B8; background: #F1F5F9; }
+.plan--diamond:has(input:checked) { border-color: #0891B2; background: #ECFEFF; }
+.pkg-tbl input { text-align: right; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 8px; font: 600 1rem var(--sans); }

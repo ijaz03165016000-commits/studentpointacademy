@@ -2,7 +2,7 @@
 import * as store from "../store.js";
 import { SUBSCRIPTION as SUB, className, shortName, CLASSES } from "../school.js";
 import { $, $$, esc, icon, kpi, card, empty, pill, person, statusPill, toast, dialog, field, options, fmtDate, money, today, iso } from "../ui.js";
-import { getOffer } from "../classroom-kit.js";
+import { getOffer, priceFor } from "../classroom-kit.js";
 
 const addDays = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
 export const daysLeft = (u) => (u.subscribedUntil ? Math.round((new Date(u.subscribedUntil + "T12:00") - new Date(today() + "T12:00")) / 864e5) : -1);
@@ -14,10 +14,15 @@ export async function plansFor(user) {
   const offer = await getOffer();
   const plans = [{ id: "portal", label: "Student portal", amount: SUB.amount, days: SUB.days, note: "Results, attendance, homework diary, timetable, fees" }];
   const canClass = offer.classes.includes(user.classId) && (offer.open || user.plan === "classroom");
-  if (canClass) plans.push({ id: "classroom", label: "Online Classroom", amount: user.plan === "classroom" && user.planPrice ? user.planPrice : offer.price, days: offer.days, note: "Everything in the portal + homework uploads, teacher feedback, voice notes, Dua & Qirat", badge: offer.badge });
+  if (canClass) offer.tiers.forEach((t) => {
+    const mine = user.plan === "classroom" && (user.planTier || "silver") === t.id && user.planPrice;   // keep the price they joined at
+    const amount = mine ? user.planPrice : priceFor(offer, user.classId, t.id);
+    if (amount) plans.push({ id: "classroom-" + t.id, plan: "classroom", tier: t.id, label: `Online Classroom · ${t.name}`, amount, days: offer.days, note: t.perks.join(" · "), badge: t.id === "gold" ? "Popular" : "" });
+  });
   return plans;
 }
-export const planOf = (u) => (u?.plan === "classroom" ? "classroom" : "portal");
+export const planOf = (u) => (u?.plan === "classroom" ? "classroom-" + (u.planTier || "silver") : "portal");
+export const tierName = (t) => (t ? t[0].toUpperCase() + t.slice(1) : "");
 
 const payBox = (amount, days = SUB.days) => `
   <div class="pay">
@@ -34,8 +39,8 @@ const steps = (amount) => `<ol class="pay-steps">
   <li>Enter it below. Your portal opens as soon as the payment is verified.</li></ol>`;
 
 const planPicker = (plans, sel) => plans.length < 2 ? `<input type="hidden" name="plan" value="${esc(plans[0].id)}">` : `<fieldset class="plans full"><legend>Choose your plan</legend>${plans.map((p) => `
-  <label class="plan${p.id === "classroom" ? " plan--hot" : ""}"><input type="radio" name="plan" value="${esc(p.id)}"${p.id === sel ? " checked" : ""}>
-    <span class="plan__body"><b>${esc(p.label)}${p.badge && p.id === "classroom" ? ` <span class="pill pill--gold">${esc(p.badge)}</span>` : ""}</b><span class="plan__price">${money(p.amount)}<small> / ${p.days} days</small></span><span class="muted small">${esc(p.note)}</span></span></label>`).join("")}</fieldset>`;
+  <label class="plan${p.plan === "classroom" ? " plan--hot plan--" + esc(p.tier) : ""}"><input type="radio" name="plan" value="${esc(p.id)}"${p.id === sel ? " checked" : ""}>
+    <span class="plan__body"><b>${esc(p.label)}${p.badge ? ` <span class="pill pill--gold">${esc(p.badge)}</span>` : ""}</b><span class="plan__price">${money(p.amount)}<small> / ${p.days} days</small></span><span class="muted small">${esc(p.note)}</span></span></label>`).join("")}</fieldset>`;
 
 function payForm(renew, plans, sel) {
   return `<form class="form" id="subf" novalidate>
@@ -71,7 +76,7 @@ export function wireForm(user, done, plans) {
       const DUP = "This Transaction ID has already been submitted. If you think this is a mistake, contact the academy office.";
       const docId = "TID-" + tid.toUpperCase();   // one record per TID, so a TID can't be used twice
       if (!store.IS_LIVE && await store.get("subscriptions", docId)) throw new Error(DUP);
-      await store.set("subscriptions", docId, { userId: user.id, studentId: user.linkId || user.id, name: user.name, classId: user.classId || "", plan: plan.id, amount: plan.amount, method: SUB.method, tid, sender, submittedAt: today(), submittedAtTs: new Date().toISOString(), status: "pending" }).catch((x) => { throw /permission|insufficient/i.test(x.code || x.message) ? new Error(DUP) : x; });
+      await store.set("subscriptions", docId, { userId: user.id, studentId: user.linkId || user.id, name: user.name, classId: user.classId || "", plan: plan.plan || plan.id, tier: plan.tier || "", amount: plan.amount, method: SUB.method, tid, sender, submittedAt: today(), submittedAtTs: new Date().toISOString(), status: "pending" }).catch((x) => { throw /permission|insufficient/i.test(x.code || x.message) ? new Error(DUP) : x; });
       toast("Payment submitted for verification");
       done();
     } catch (x) { st.textContent = x.message; st.className = "form-status full is-err"; btn.disabled = false; }
@@ -87,7 +92,7 @@ export async function paywall({ el, user, title }) {
   const expired = user.subscribedUntil && user.subscribedUntil < today();
   const first = user.name.split(" ")[0];
   const plans = await plansFor(user);
-  const sel = expired ? planOf(user) : (plans.find((p) => p.id === "classroom") ? "classroom" : "portal");
+  const sel = expired ? planOf(user) : (plans.find((p) => p.id === "classroom-gold") ? "classroom-gold" : "portal");
 
   if (pending) {
     el.innerHTML = `<div class="paywall">
@@ -107,7 +112,7 @@ export async function paywall({ el, user, title }) {
       <div class="paywall__top">
         <div class="paywall__badge">${icon("star")}</div>
         <div><h2>${expired ? "Your subscription has ended" : `Welcome, ${esc(first)}!`}</h2>
-        <p class="muted" style="margin:0">${expired ? `It expired on ${fmtDate(user.subscribedUntil)}. Renew to keep using the portal.` : `Activate your Student Point Academy portal for just <b>${money(SUB.amount)} a month</b>${plans.length > 1 ? `, or join the <b>Online Classroom</b> for ${money(plans[1].amount)}` : ""}.`}</p></div>
+        <p class="muted" style="margin:0">${expired ? `It expired on ${fmtDate(user.subscribedUntil)}. Renew to keep using the portal.` : `Activate your Student Point Academy portal for just <b>${money(SUB.amount)} a month</b>${plans.length > 1 ? `, or join the <b>Online Classroom</b> from ${money(Math.min(...plans.slice(1).map((p) => p.amount)))}` : ""}.`}</p></div>
       </div>
       ${lastRejected ? `<p class="form-status is-err" style="display:block">Your last payment (TID ${esc(lastRejected.tid)}) could not be verified${lastRejected.reason ? ": " + esc(lastRejected.reason) : "."} Please check and submit again.</p>` : ""}
       <div class="paywall__grid">
@@ -143,7 +148,7 @@ export async function subscriptionPage({ el, user }) {
   const plans = await plansFor(user), cur = plans.find((p) => p.id === planOf(user)) || plans[0];
   el.innerHTML = `<div class="grid grid--2">
     <div>${card("My subscription", `<div class="grid grid--kpi" style="margin:0">${kpi({ label: "Active until", value: fmtDate(user.subscribedUntil, false), sub: d >= 0 ? `${d} day${d === 1 ? "" : "s"} left` : "Expired", ic: "calendar", tone: d > SUB.remindDays ? "green" : "red" })}${kpi({ label: cur.label, value: money(cur.amount), sub: `every ${cur.days} days`, ic: "star", tone: "gold" })}</div>`)}
-    ${card("Payment history", mine.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Plan</th><th>TID</th><th class="num">Amount</th><th>Status</th><th>Valid until</th></tr></thead><tbody>${mine.map((s) => `<tr><td class="nowrap">${fmtDate(s.submittedAt)}</td><td>${s.plan === "classroom" ? "Online Classroom" : "Portal"}</td><td><code>${esc(s.tid)}</code></td><td class="num">${money(s.amount)}</td><td>${statusPill(s.status)}</td><td class="nowrap">${s.validUntil ? fmtDate(s.validUntil) : "—"}</td></tr>`).join("")}</tbody></table></div>` : empty("No payments yet", "money"))}</div>
+    ${card("Payment history", mine.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Plan</th><th>TID</th><th class="num">Amount</th><th>Status</th><th>Valid until</th></tr></thead><tbody>${mine.map((s) => `<tr><td class="nowrap">${fmtDate(s.submittedAt)}</td><td>${s.plan === "classroom" ? "Online Classroom" + (s.tier ? " · " + tierName(s.tier) : "") : "Portal"}</td><td><code>${esc(s.tid)}</code></td><td class="num">${money(s.amount)}</td><td>${statusPill(s.status)}</td><td class="nowrap">${s.validUntil ? fmtDate(s.validUntil) : "—"}</td></tr>`).join("")}</tbody></table></div>` : empty("No payments yet", "money"))}</div>
     ${card(pending ? "Renewal submitted" : "Renew now", pending ? `<p>Your payment with TID <b>${esc(pending.tid)}</b> is being verified. The extra days will be added to your current subscription.</p>` : `${payPanel(plans, cur.id, true)}<p class="muted small">Renewing early is fine: the new days start after your current subscription ends.</p>`)}
   </div>`;
   if (!pending) wireForm(user, () => subscriptionPage({ el, user }), plans);
@@ -161,10 +166,10 @@ export async function approve(sub, by) {
   const until = addDays(start, days - 1);
   await store.update("subscriptions", sub.id, { status: "approved", decidedAt: today(), decidedBy: by, validFrom: start, validUntil: until });
   const patch = { subscribedUntil: until, subscribedUntilMs: new Date(until + "T23:59:59").getTime(), plan };
-  if (plan === "classroom") patch.planPrice = sub.amount || u.planPrice || 0;
+  if (plan === "classroom") { patch.planPrice = sub.amount || u.planPrice || 0; patch.planTier = sub.tier || u.planTier || "silver"; }
   await store.update("users", sub.userId, patch);
   // tutors see which students are in the online classroom
-  if (u.linkId) await store.update("students", u.linkId, { online: plan === "classroom" }).catch(() => {});
+  if (u.linkId) await store.update("students", u.linkId, { online: plan === "classroom", onlineTier: plan === "classroom" ? patch.planTier : "" }).catch(() => {});
   return until;
 }
 
@@ -191,7 +196,7 @@ export function subscriptionsAdmin(byName) {
       <button class="btn btn--outline btn--sm" id="manual">${icon("plus").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Record cash / manual payment</button>
     </div>
     ${card(`${list.length} payment${list.length === 1 ? "" : "s"}`, list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Plan</th><th>TID</th><th>Paid from</th><th class="num">Amount</th><th>Submitted</th><th>Status</th><th></th></tr></thead><tbody>
-      ${list.map((s) => `<tr><td>${person(s.name, `${s.studentId} · ${esc(className(s.classId))}`)}</td><td>${s.plan === "classroom" ? pill("Online Classroom", "gold") : "Portal"}</td><td><code>${esc(s.tid)}</code></td><td class="nowrap">${esc(s.sender)}</td><td class="num">${money(s.amount)}</td><td class="nowrap">${fmtDate(s.submittedAt)}</td>
+      ${list.map((s) => `<tr><td>${person(s.name, `${s.studentId} · ${esc(className(s.classId))}`)}</td><td>${s.plan === "classroom" ? pill("Classroom" + (s.tier ? " · " + tierName(s.tier) : ""), "gold") : "Portal"}</td><td><code>${esc(s.tid)}</code></td><td class="nowrap">${esc(s.sender)}</td><td class="num">${money(s.amount)}</td><td class="nowrap">${fmtDate(s.submittedAt)}</td>
         <td>${statusPill(s.status)}${s.validUntil ? `<div class="muted small">until ${fmtDate(s.validUntil, false)}</div>` : ""}${s.reason ? `<div class="muted small">${esc(s.reason)}</div>` : ""}</td>
         <td class="nowrap">${s.status === "pending" ? `<button class="btn btn--navy btn--sm" data-ok="${esc(s.id)}">Approve</button> <button class="btn btn--outline btn--sm" data-no="${esc(s.id)}">Reject</button>` : ""}</td></tr>`).join("")}
     </tbody></table></div>` : empty(status === "pending" ? "No payments waiting. All caught up!" : "No payments here", "money"))}
@@ -215,16 +220,18 @@ export function subscriptionsAdmin(byName) {
       title: "Record a payment manually", submit: "Save and activate",
       body: `<div class="form">
         ${field("m-st", "Student", `<select id="m-st" name="uid">${options(users.sort((a, b) => CLASSES.findIndex((c) => c.id === a.classId) - CLASSES.findIndex((c) => c.id === b.classId) || a.loginId.localeCompare(b.loginId)).map((u) => [u.id, `${u.name} — ${u.loginId}${u.subscribedUntil >= today() ? " (active)" : ""}`]))}</select>`, "full")}
-        ${field("m-plan", "Plan", `<select id="m-plan" name="plan">${options([["portal", `Student portal (${money(SUB.amount)})`], ["classroom", "Online Classroom (offer price)"]])}</select>`)}
+        ${field("m-plan", "Plan", `<select id="m-plan" name="plan">${options([["portal", `Student portal (${money(SUB.amount)})`], ["classroom-silver", "Online Classroom · Silver"], ["classroom-gold", "Online Classroom · Gold"], ["classroom-diamond", "Online Classroom · Diamond"]])}</select>`)}
         ${field("m-how", "Paid by", `<select id="m-how" name="method">${options(["Cash at office", SUB.method, "Bank transfer", "Free (scholarship)"])}</select>`)}
         ${field("m-ref", "Receipt / TID", `<input id="m-ref" name="ref" placeholder="optional">`)}
       </div>`,
       onSubmit: async (f) => {
         const u = users.find((x) => x.id === f.uid.value);
         const free = f.method.value.startsWith("Free");
-        const plan = f.plan.value, offer = await getOffer();
-        const id = await store.add("subscriptions", { userId: u.id, studentId: u.linkId || u.id, name: u.name, classId: u.classId || "", plan, amount: free ? 0 : plan === "classroom" ? (u.planPrice || offer.price) : SUB.amount, method: f.method.value, tid: f.ref.value.trim() || "MANUAL-" + Date.now().toString(36).toUpperCase(), sender: "—", submittedAt: today(), submittedAtTs: new Date().toISOString(), status: "pending" });
-        const until = await approve({ id, userId: u.id, plan, amount: plan === "classroom" ? (u.planPrice || offer.price) : SUB.amount }, byName);
+        const [plan, tier = ""] = f.plan.value.split("-"), offer = await getOffer();
+        const full = plan === "classroom" ? ((u.planTier || "silver") === tier && u.planPrice) || priceFor(offer, u.classId, tier) : SUB.amount;
+        if (plan === "classroom" && !full) throw new Error(`${u.name}'s class is not in the Online Classroom packages.`);
+        const id = await store.add("subscriptions", { userId: u.id, studentId: u.linkId || u.id, name: u.name, classId: u.classId || "", plan, tier, amount: free ? 0 : full, method: f.method.value, tid: f.ref.value.trim() || "MANUAL-" + Date.now().toString(36).toUpperCase(), sender: "—", submittedAt: today(), submittedAtTs: new Date().toISOString(), status: "pending" });
+        const until = await approve({ id, userId: u.id, plan, tier, amount: full }, byName);
         toast(`${u.name} is active until ${fmtDate(until)}`); reload();
       }
     });

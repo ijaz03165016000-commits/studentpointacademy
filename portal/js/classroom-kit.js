@@ -13,13 +13,20 @@ const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${Stri
 export async function getOffer() {
   let saved = null;
   try { saved = await store.get("settings", "classroomOffer"); } catch { /* offline or rules not published yet */ }
-  const o = { ...CLASSROOM.offer, ...(saved || {}) };
-  o.price = Number(o.price) || CLASSROOM.offer.price;
-  o.oldPrice = Number(o.oldPrice) || 0;
+  const def = CLASSROOM.offer;
+  // offers saved before packages existed (single price) fall back to the default packages
+  const o = { ...def, ...(saved || {}) };
+  if (!Array.isArray(o.bands) || !o.bands.length) { o.bands = def.bands; o.title = def.title; o.badge = def.badge; }
+  if (!Array.isArray(o.tiers) || !o.tiers.length) o.tiers = def.tiers;
+  if (o.demo === undefined) o.demo = def.demo;
+  o.bands = o.bands.map((b) => ({ ...b, classes: (b.classes || []).filter((id) => CLASSES.some((c) => c.id === id)), prices: Object.fromEntries(o.tiers.map((t) => [t.id, Number(b.prices?.[t.id]) || 0])) }));
+  o.tiers = o.tiers.map((t) => ({ ...t, perks: (t.perks || []).filter(Boolean) }));
+  o.classes = CLASSES.filter((c) => o.bands.some((b) => b.classes.includes(c.id))).map((c) => c.id);
+  o.price = Math.min(...o.bands.flatMap((b) => Object.values(b.prices)).filter((n) => n > 0));   // "from Rs. …"
+  if (!isFinite(o.price)) o.price = 0;
   o.days = Number(o.days) || 30;
   o.seats = Number(o.seats) || 0;
   o.taken = Number(o.taken) || 0;
-  o.classes = (o.classes?.length ? o.classes : CLASSROOM.eligible).filter((id) => CLASSES.some((c) => c.id === id));
   o.perks = (o.perks || []).filter(Boolean);
   o.seatsLeft = o.seats ? Math.max(0, o.seats - o.taken) : null;
   o.expired = !!o.endsOn && o.endsOn < todayIso();
@@ -27,6 +34,9 @@ export async function getOffer() {
   o.open = !!o.active && !o.expired && !o.full;
   return o;
 }
+export const bandFor = (o, classId) => o.bands.find((b) => b.classes.includes(classId)) || null;
+export const tierOf = (o, id) => o.tiers.find((t) => t.id === id) || o.tiers[0];
+export const priceFor = (o, classId, tier) => bandFor(o, classId)?.prices[tier] || 0;
 
 /* "3 days 04:12:09" until the end of the offer's last day */
 export function countdown(endsOn) {

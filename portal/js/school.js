@@ -143,16 +143,26 @@ export const CLASSROOM = {
   },
   offer: {
     active: true,
-    title: "Online Classroom — Special Offer",
+    title: "Online Classroom — Silver, Gold & Diamond Packages",
     tagline: "Upload homework, get teacher feedback, and learn Duas with voice notes — from home.",
-    price: 500,            // Rs. per month
-    oldPrice: 0,           // optional crossed-out price; 0 hides it
+    demo: "Free demo class — try it for 1 day",
     days: 30,
-    classes: ["PG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
     endsOn: "",            // YYYY-MM-DD — shows a countdown; empty = no end date
     seats: 0,              // 0 = no seat limit
     taken: 0,              // approved enrolments counted against seats
-    badge: "Limited-time offer",
+    badge: "New packages",
+    /* Three packages. The admin can rename them and change what each includes. */
+    tiers: [
+      { id: "silver",  name: "Silver",  perks: ["15 minutes daily one-to-one time with the teacher", "Homework checked with written feedback", "Weekly Dua & Kalma lesson", "Voice chat with teacher (reply within 24 hours)"] },
+      { id: "gold",    name: "Gold",    perks: ["30 minutes daily one-to-one time with the teacher", "Written + voice feedback on every homework", "Daily Dua & Qirat practice with corrections", "Monthly progress report for parents"] },
+      { id: "diamond", name: "Diamond", perks: ["1 hour daily one-to-one time with the teacher", "Individual consultancy: study plan & exam guidance", "Same-day homework checking (priority)", "Extra worksheets, weekly test & parent meeting every month"] }
+    ],
+    /* Monthly price of each package, by class group (Rs.) */
+    bands: [
+      { id: "junior", label: "Play Group – Class 5", classes: ["PG", "1", "2", "3", "4", "5"], prices: { silver: 1000, gold: 2500, diamond: 5000 } },
+      { id: "middle", label: "Class 6 – 8",          classes: ["6", "7", "8"],                   prices: { silver: 1500, gold: 3000, diamond: 6000 } },
+      { id: "senior", label: "Class 9 – 12",         classes: ["9", "10", "11", "12"],           prices: { silver: 2500, gold: 5000, diamond: 10000 } }
+    ],
     perks: [
       "Upload homework as photos, PDF or a voice note",
       "Teacher checks it and sends written or voice feedback",

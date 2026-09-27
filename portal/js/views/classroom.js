@@ -12,8 +12,8 @@
 import * as store from "../store.js";
 import { CLASSES, CLASSROOM, classById, className, classroomKind } from "../school.js";
 import { $, $$, esc, icon, kpi, card, empty, pill, person, avatar, toast, dialog, field, options, armed, fmtDate, fmtTime, today, money } from "../ui.js";
-import { getOffer, countdown, attachBox, wireAttach, voiceBox, wireVoice, uploadBundle, audioPlayer, filesView, stars } from "../classroom-kit.js";
-import { payPanel, wireForm, approve as approvePayment } from "./subscribe.js";
+import { getOffer, bandFor, priceFor, countdown, attachBox, wireAttach, voiceBox, wireVoice, uploadBundle, audioPlayer, filesView, stars } from "../classroom-kit.js";
+import { payPanel, wireForm, approve as approvePayment, plansFor, tierName } from "./subscribe.js";
 
 export const isOnline = (u) => u?.plan === "classroom";
 const plusIc = icon("plus").replace("<svg", '<svg width="18" height="18" fill="currentColor"');
@@ -25,6 +25,7 @@ function workPill(post, w) {
   if (!w) return post.due && post.due < today() ? pill("Late — not submitted", "red") : pill("To do", "gold");
   return { submitted: pill("Submitted", "grey"), reviewed: pill("Checked ✓", "green"), redo: pill("Redo", "red") }[w.status] || pill(w.status, "grey");
 }
+const tierPill = (st) => st?.onlineTier ? pill(tierName(st.onlineTier), st.onlineTier === "diamond" ? "green" : "gold") + " " : "";
 const kindPill = (k) => `<span class="kind kind--${esc(k)}">${icon(classroomKind(k).icon)}${esc(classroomKind(k).label)}</span>`;
 
 function feedbackBlock(w) {
@@ -54,24 +55,26 @@ async function upgradePage({ el, user }) {
       <button class="btn btn--navy" onclick="location.reload()">Check again</button></div></div>`;
     return;
   }
-  const plans = [{ id: "classroom", label: "Online Classroom", amount: offer.price, days: offer.days, note: "" }];
+  const plans = (await plansFor(user)).filter((p) => p.plan === "classroom");
+  const band = bandFor(offer, user.classId);
   const cd = countdown(offer.endsOn);
   el.innerHTML = `<div class="paywall"><div class="paywall__card">
     <div class="offer-hero">
       <span class="offer-hero__badge">${esc(offer.badge || "Special offer")}</span>
       <h2>${esc(offer.title)}</h2>
       <p>${esc(offer.tagline)}</p>
-      <div class="offer-hero__price">${offer.oldPrice ? `<s>${money(offer.oldPrice)}</s>` : ""}<b>${money(offer.price)}</b><span>/ month</span></div>
+      ${band ? `<div class="offer-hero__price"><span>${esc(band.label)}: from</span><b>${money(Math.min(...Object.values(band.prices).filter(Boolean)))}</b><span>/ month</span></div>` : ""}
+      ${offer.demo ? `<p class="offer-hero__cd">🎁 ${esc(offer.demo)}</p>` : ""}
       ${cd ? `<p class="offer-hero__cd">⏳ Offer ends in <b data-cd>${esc(cd.text)}</b></p>` : ""}
       ${offer.seatsLeft !== null ? `<p class="offer-hero__cd">🔥 Only <b>${offer.seatsLeft}</b> seats left</p>` : ""}
     </div>
-    ${!eligible ? `<p class="form-status is-err" style="display:block">The Online Classroom offer is for Play Group to Intermediate. Your class (${esc(className(user.classId))}) is not included — contact the academy office.</p>`
+    ${!eligible || !plans.length ? `<p class="form-status is-err" style="display:block">The Online Classroom offer is for Play Group to Intermediate. Your class (${esc(className(user.classId))}) is not included — contact the academy office.</p>`
       : !offer.open ? `<p class="form-status is-err" style="display:block">This offer is closed right now${offer.expired ? " (it ended on " + fmtDate(offer.endsOn) + ")" : offer.full ? " (all seats are taken)" : ""}. Ask the academy office about the next batch.</p>`
-      : `<div class="paywall__grid"><div><h3>What you get</h3>${perks}</div><div>${payPanel(plans, "classroom", false, { form: false })}</div></div>
-         <h3 style="margin-top:22px">How to join</h3>${payPanel(plans, "classroom", false, { box: false })}
+      : `<div class="paywall__grid"><div><h3>Every package includes</h3>${perks}</div><div>${payPanel(plans, "classroom-gold", false, { form: false })}</div></div>
+         <h3 style="margin-top:22px">Choose your package and pay</h3>${payPanel(plans, "classroom-gold", false, { box: false })}
          <p class="muted small">Your current portal time continues; the classroom days are added on top once the payment is verified.</p>`}
   </div></div>`;
-  if (eligible && offer.open) wireForm(user, () => upgradePage({ el, user }), plans);
+  if (eligible && offer.open && plans.length) wireForm(user, () => upgradePage({ el, user }), plans);
   tickCountdown(el, offer.endsOn);
 }
 function tickCountdown(el, endsOn) {
@@ -315,7 +318,7 @@ export function staffClassroom(getCtx) {
     el.innerHTML = `<p><a href="#/classroom" class="linkbtn">← Classroom</a></p>
     <div class="grid grid--main">
       <div>${work.length ? work.map((w) => `<div class="card2 work" id="w-${esc(w.studentId)}">
-          <div class="card2__head"><div class="person">${avatar(w.studentName)}<div><b>${esc(w.studentName)}</b><span>${esc(w.studentId)} · ${fmtTime(w.submittedAt)}</span></div></div>${workPill(p, w)}</div>
+          <div class="card2__head"><div class="person">${avatar(w.studentName)}<div><b>${esc(w.studentName)}</b><span>${esc(w.studentId)} · ${fmtTime(w.submittedAt)}</span></div></div><span>${tierPill(students.find((s) => s.id === w.studentId))}${workPill(p, w)}</span></div>
           ${w.text ? `<p class="post__text">${esc(w.text)}</p>` : ""}${audioPlayer(w.audio, p.kind === "dua" ? "Student's recitation" : "Student's voice note")}${filesView(w.files)}
           ${w.feedback ? `<div style="margin-top:12px">${feedbackBlock(w)}</div>` : ""}
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--navy btn--sm" data-fb="${esc(w.id)}">${w.feedback ? "Change feedback" : "Give feedback"}</button><a class="btn btn--outline btn--sm" href="#/cchat?t=${encodeURIComponent(w.studentId)}">Message</a></div>
@@ -362,7 +365,7 @@ export function staffClassroom(getCtx) {
     const students = perClass.flat();
     const withChat = new Set(msgs.map((m) => m.studentId));
     const contacts = students.filter((s) => (s.online && s.status !== "left") || withChat.has(s.id))
-      .map((s) => ({ key: s.id, title: s.name, sub: `${shortClass(s.classId)} · ${s.id}`, studentId: s.id, teacherId: myId }));
+      .map((s) => ({ key: s.id, title: s.name, sub: `${shortClass(s.classId)} · ${s.id}${s.onlineTier ? " · " + tierName(s.onlineTier) : ""}`, studentId: s.id, teacherId: myId }));
     return chatPage({ el, params, side: "staff", contacts, msgs, keyOf: (m) => m.studentId, route: "cchat", refreshCounts, again: (p) => cchat({ el, params: p, refreshCounts }) });
   }
 
@@ -391,14 +394,19 @@ export function adminClassroom(byName) {
           <label class="full check"><input type="checkbox" name="active"${offer.active ? " checked" : ""}> <b>Offer is on</b> — show it on the website and accept enrolments</label>
           ${field("o-title", "Title", `<input id="o-title" name="title" required maxlength="80" value="${esc(offer.title)}">`, "full")}
           ${field("o-tag", "Short description", `<input id="o-tag" name="tagline" maxlength="160" value="${esc(offer.tagline)}">`, "full")}
-          ${field("o-price", "Price (Rs. per month)", `<input id="o-price" name="price" type="number" min="0" required value="${offer.price}">`)}
-          ${field("o-old", "Crossed-out price (optional)", `<input id="o-old" name="oldPrice" type="number" min="0" value="${offer.oldPrice || ""}" placeholder="e.g. 1500">`)}
           ${field("o-days", "Days per payment", `<input id="o-days" name="days" type="number" min="1" max="365" value="${offer.days}">`)}
           ${field("o-end", "Offer ends on (optional)", `<input id="o-end" name="endsOn" type="date" value="${esc(offer.endsOn || "")}"><div class="field__hint">Shows a live countdown. Leave empty for no end date.</div>`)}
           ${field("o-seats", "Seats (0 = unlimited)", `<input id="o-seats" name="seats" type="number" min="0" value="${offer.seats}"><div class="field__hint">${offer.taken} taken so far</div>`)}
           ${field("o-badge", "Badge text", `<input id="o-badge" name="badge" maxlength="40" value="${esc(offer.badge || "")}" placeholder="e.g. Limited-time offer">`)}
-          <fieldset class="full" style="border:0;padding:0;margin:0"><legend class="field__label">Classes that can join</legend><div class="checks">${CLASSES.filter((c) => CLASSROOM.eligible.includes(c.id)).map((c) => `<label><input type="checkbox" name="cls" value="${esc(c.id)}"${offer.classes.includes(c.id) ? " checked" : ""}> ${esc(c.name)}</label>`).join("")}</div></fieldset>
-          ${field("o-perks", "What students get (one per line)", `<textarea id="o-perks" name="perks" rows="6">${esc(offer.perks.join("\n"))}</textarea>`, "full")}
+          ${field("o-demo", "Free demo note", `<input id="o-demo" name="demo" maxlength="80" value="${esc(offer.demo || "")}" placeholder="e.g. Free demo class — try it for 1 day">`)}
+          <fieldset class="full" style="border:0;padding:0;margin:0"><legend class="field__label">Monthly price of each package (Rs.) — 0 hides a package for that group</legend>
+            <div class="tbl-wrap"><table class="tbl pkg-tbl"><thead><tr><th>Class group</th>${offer.tiers.map((t) => `<th class="num">${esc(t.name)}</th>`).join("")}</tr></thead><tbody>
+            ${offer.bands.map((b, i) => `<tr><td><b>${esc(b.label)}</b><div class="muted small">${esc(b.classes.map((c) => classById(c)?.short || c).join(", "))}</div></td>${offer.tiers.map((t) => `<td class="num"><label class="sr-only" for="pr-${i}-${t.id}">${esc(b.label)} ${esc(t.name)}</label><input id="pr-${i}-${t.id}" data-band="${i}" data-tier="${esc(t.id)}" type="number" min="0" step="50" value="${b.prices[t.id] || 0}" style="width:110px"></td>`).join("")}</tr>`).join("")}
+            </tbody></table></div></fieldset>
+          <div class="full grid grid--3" style="gap:12px">${offer.tiers.map((t, i) => `<div class="card2" style="padding:14px">
+            ${field("tn-" + i, "Package name", `<input id="tn-${i}" data-tname="${i}" maxlength="20" value="${esc(t.name)}">`)}
+            ${field("tp-" + i, "What it includes (one per line)", `<textarea id="tp-${i}" data-tperks="${i}" rows="5">${esc(t.perks.join("\n"))}</textarea>`)}</div>`).join("")}</div>
+          ${field("o-perks", "Included in every package (one per line)", `<textarea id="o-perks" name="perks" rows="6">${esc(offer.perks.join("\n"))}</textarea>`, "full")}
           <div class="form-status full" role="alert"></div>
           <div class="full" style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn--navy" type="submit">Save offer</button><a class="btn btn--outline" href="../classroom.html" target="_blank" rel="noopener">View on website</a></div>
         </form>`)}
@@ -407,9 +415,10 @@ export function adminClassroom(byName) {
       $$("[data-tab]").forEach((b) => (b.onclick = () => go(b.dataset.tab)));
       $("#of").onsubmit = async (e) => {
         e.preventDefault(); const f = e.currentTarget, st = $(".form-status", f);
-        const classes = $$("input[name=cls]:checked", f).map((i) => i.value);
-        if (!classes.length) { st.textContent = "Tick at least one class."; st.className = "form-status full is-err"; return; }
-        const data = { active: f.active.checked, title: f.title.value.trim(), tagline: f.tagline.value.trim(), price: Number(f.price.value) || 0, oldPrice: Number(f.oldPrice.value) || 0, days: Number(f.days.value) || 30, endsOn: f.endsOn.value, seats: Number(f.seats.value) || 0, taken: offer.taken, badge: f.badge.value.trim(), classes, perks: f.perks.value.split("\n").map((x) => x.trim()).filter(Boolean), updatedAt: new Date().toISOString(), updatedBy: byName };
+        const tiers = offer.tiers.map((t, i) => ({ id: t.id, name: $(`[data-tname="${i}"]`, f).value.trim() || t.name, perks: $(`[data-tperks="${i}"]`, f).value.split("\n").map((x) => x.trim()).filter(Boolean) }));
+        const bands = offer.bands.map((b, i) => ({ id: b.id, label: b.label, classes: b.classes, prices: Object.fromEntries(offer.tiers.map((t) => [t.id, Math.max(0, Number($(`[data-band="${i}"][data-tier="${t.id}"]`, f).value) || 0)])) }));
+        if (!bands.some((b) => Object.values(b.prices).some(Boolean))) { st.textContent = "Enter at least one package price."; st.className = "form-status full is-err"; return; }
+        const data = { active: f.active.checked, title: f.title.value.trim(), tagline: f.tagline.value.trim(), demo: f.demo.value.trim(), days: Number(f.days.value) || 30, endsOn: f.endsOn.value, seats: Number(f.seats.value) || 0, taken: offer.taken, badge: f.badge.value.trim(), tiers, bands, perks: f.perks.value.split("\n").map((x) => x.trim()).filter(Boolean), updatedAt: new Date().toISOString(), updatedBy: byName };
         try { await store.set("settings", "classroomOffer", data); toast("Offer saved — the website shows it now"); reload(); }
         catch (x) { st.textContent = x.message; st.className = "form-status full is-err"; }
       };
@@ -418,7 +427,7 @@ export function adminClassroom(byName) {
 
     if (tab === "students") {
       const users = (await store.list("users", { role: "student" })).filter(isOnline).sort((a, b) => String(a.subscribedUntil).localeCompare(String(b.subscribedUntil)));
-      el.innerHTML = tabs + card(`${users.length} online classroom student${users.length === 1 ? "" : "s"}`, users.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Class</th><th class="num">Price</th><th>Active until</th></tr></thead><tbody>${users.map((u) => `<tr><td>${person(u.name, u.loginId)}</td><td>${esc(className(u.classId))}</td><td class="num">${money(u.planPrice || offer.price)}</td><td>${u.subscribedUntil >= today() ? pill(fmtDate(u.subscribedUntil, false), "green") : pill("Ended " + fmtDate(u.subscribedUntil, false), "red")}</td></tr>`).join("")}</tbody></table></div>` : empty("No online classroom students yet.", "school"));
+      el.innerHTML = tabs + card(`${users.length} online classroom student${users.length === 1 ? "" : "s"}`, users.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Class</th><th>Package</th><th class="num">Price</th><th>Active until</th></tr></thead><tbody>${users.map((u) => `<tr><td>${person(u.name, u.loginId)}</td><td>${esc(className(u.classId))}</td><td>${pill(tierName(u.planTier || "silver"), u.planTier === "diamond" ? "green" : "gold")}</td><td class="num">${money(u.planPrice || offer.price)}</td><td>${u.subscribedUntil >= today() ? pill(fmtDate(u.subscribedUntil, false), "green") : pill("Ended " + fmtDate(u.subscribedUntil, false), "red")}</td></tr>`).join("")}</tbody></table></div>` : empty("No online classroom students yet.", "school"));
       $$("[data-tab]").forEach((b) => (b.onclick = () => go(b.dataset.tab)));
       return;
     }
@@ -429,14 +438,14 @@ export function adminClassroom(byName) {
     el.innerHTML = tabs + `
     <div class="grid grid--kpi">
       ${kpi({ label: "Waiting for approval", value: all.filter((x) => x.status === "pending").length, sub: "Check each TID in EasyPaisa", ic: "clock", tone: all.some((x) => x.status === "pending") ? "red" : "green" })}
-      ${kpi({ label: "Offer", value: money(offer.price), sub: offer.open ? (offer.endsOn ? "Ends " + fmtDate(offer.endsOn, false) : "Running") : "Closed", ic: "star", tone: offer.open ? "gold" : "red", href: "#/enrolments?tab=offer" })}
+      ${kpi({ label: "Packages", value: "from " + money(offer.price), sub: offer.open ? (offer.endsOn ? "Ends " + fmtDate(offer.endsOn, false) : "Running") : "Closed", ic: "star", tone: offer.open ? "gold" : "red", href: "#/enrolments?tab=offer" })}
       ${kpi({ label: "Seats", value: offer.seats ? `${offer.taken}/${offer.seats}` : offer.taken, sub: offer.seats ? `${offer.seatsLeft} left` : "No limit", ic: "users" })}
     </div>
     <div class="toolbar">${field("es", "Show", `<select id="es">${options([["pending", "Waiting for approval"], ["approved", "Approved"], ["rejected", "Rejected"], ["", "All"]], status)}</select>`)}</div>
     ${card(`${list.length} enrolment${list.length === 1 ? "" : "s"}`, list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Class</th><th>Contact</th><th>Payment</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map((x) => `<tr><td>${person(x.studentName, `Father: ${x.fatherName || "—"}`)}</td><td class="nowrap">${esc(className(x.classId))}</td>
         <td class="nowrap"><a href="https://wa.me/92${esc(String(x.phone).replace(/\D/g, "").replace(/^0/, ""))}" target="_blank" rel="noopener">${esc(x.phone)}</a><div class="muted small">${esc(x.city || "")}</div></td>
-        <td class="nowrap">${money(x.amount)}<div class="muted small">TID <code>${esc(x.tid)}</code> · ${esc(x.sender || "")}</div>${x.receipt ? `<button class="linkbtn small" data-rc="${esc(x.id)}">Receipt</button>` : ""}</td>
+        <td class="nowrap">${x.tier ? pill(tierName(x.tier), "gold") + " " : ""}${money(x.amount)}<div class="muted small">TID <code>${esc(x.tid)}</code> · ${esc(x.sender || "")}</div>${x.receipt ? `<button class="linkbtn small" data-rc="${esc(x.id)}">Receipt</button>` : ""}</td>
         <td>${x.status === "approved" ? pill("Approved", "green") + `<div class="muted small">${esc(x.studentId || "")}</div>` : x.status === "rejected" ? pill("Rejected", "red") + `<div class="muted small">${esc(x.reason || "")}</div>` : pill("Pending", "gold")}<div class="muted small">${fmtDate(x.submittedAt)}</div></td>
         <td class="nowrap">${x.status === "pending" ? `<button class="btn btn--navy btn--sm" data-ok="${esc(x.id)}">Approve</button> <button class="btn btn--outline btn--sm" data-no="${esc(x.id)}">Reject</button>` : ""}</td></tr>`).join("")}
     </tbody></table></div>` : empty(status === "pending" ? "No new enrolments. Share classroom.html on WhatsApp to get more!" : "Nothing here", "school"))}`;
@@ -470,7 +479,7 @@ export function adminClassroom(byName) {
           const id = f.sid.value.trim().toUpperCase(), classId = f.classId.value;
           if (students.some((s) => s.id === id)) throw new Error("That Student ID already exists.");
           const c = classById(classId);
-          const uid = await store.createAccount({ loginId: id, password: f.pw.value, role: "student", name: x.studentName, linkId: id, classId, plan: "classroom", planPrice: x.amount });
+          const uid = await store.createAccount({ loginId: id, password: f.pw.value, role: "student", name: x.studentName, linkId: id, classId, plan: "classroom", planTier: x.tier || "silver", planPrice: x.amount });
           let parentLine = "", parentId = "";
           if (f.parent.checked) {
             const pid = "P-" + id.replace(/^SPA-/, ""), ppw = Math.random().toString(36).slice(2, 8);
@@ -479,12 +488,12 @@ export function adminClassroom(byName) {
           }
           await store.set("students", id, { name: x.studentName, fatherName: x.fatherName || "", classId, rollNo: classId === x.classId ? roll : 1, gender: x.gender || "M", dob: "", phone: x.phone || "", address: x.city || "", admissionDate: today(), subjects: c.subjects.slice(), status: "active", parentId, online: true, source: "online-classroom" });
           const payId = "TID-" + String(x.tid).toUpperCase();
-          const payDoc = { userId: uid, studentId: id, name: x.studentName, classId, plan: "classroom", amount: x.amount, method: "EasyPaisa", tid: x.tid, sender: x.sender || "", submittedAt: x.submittedAt || today(), submittedAtTs: x.submittedAtTs || new Date().toISOString(), status: "pending", source: "website" };
+          const payDoc = { userId: uid, studentId: id, name: x.studentName, classId, plan: "classroom", tier: x.tier || "silver", amount: x.amount, method: "EasyPaisa", tid: x.tid, sender: x.sender || "", submittedAt: x.submittedAt || today(), submittedAtTs: x.submittedAtTs || new Date().toISOString(), status: "pending", source: "website" };
           let subId = payId;
           try { await store.set("subscriptions", payId, payDoc); } catch { subId = await store.add("subscriptions", payDoc); }
-          const until = await approvePayment({ id: subId, userId: uid, plan: "classroom", amount: x.amount, days: offer.days }, byName);
+          const until = await approvePayment({ id: subId, userId: uid, plan: "classroom", tier: x.tier || "silver", amount: x.amount, days: offer.days }, byName);
           await store.update("classroomEnrollments", x.id, { status: "approved", studentId: id, decidedAt: today(), decidedBy: byName });
-          const { seatsLeft, open, expired, full, ...keep } = offer;
+          const { seatsLeft, open, expired, full, price, classes, ...keep } = offer;
           await store.set("settings", "classroomOffer", { ...keep, taken: offer.taken + 1 }).catch(() => {});
           const portal = location.origin + location.pathname.replace(/app\.html$/, "");
           const msg = `Assalam o Alaikum! ${x.studentName}'s admission in the Student Point Academy Online Classroom is confirmed ✅\n\nPortal: ${portal}\nStudent ID: ${id}\nPassword: ${f.pw.value}${parentLine ? `\nParent login: ${parentLine}` : ""}\nActive until: ${fmtDate(until)}\n\nOpen the portal → Online Classroom to see homework and Dua lessons.`;

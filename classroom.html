@@ -110,14 +110,15 @@ Student Point Academy
 <span class="cr-badge" data-o="badge">Limited-time offer</span>
 <h1 data-o="title">Online Classroom — Special Offer</h1>
 <p class="cr-hero__sub" data-o="tagline">Upload homework, get teacher feedback, and learn Duas with voice notes — from home.</p>
-<div class="cr-price"><s data-o="oldPrice" hidden></s><b>Rs. <span data-o="price">500</span></b><span>/ month</span></div>
+<div class="cr-price"><span>Packages from</span><b>Rs. <span data-o="price">1,000</span></b><span>/ month</span></div>
+<p class="cr-demo" data-o="demo" hidden>🎁 <b></b> — <a href="https://wa.me/923440807888?text=Assalam+o+Alaikum%2C+I+want+a+free+1-day+demo+of+the+Online+Classroom." target="_blank" rel="noopener">book on WhatsApp</a></p>
 <div class="cr-meta">
 <span class="cr-cd" data-o="countdown" hidden>⏳ Offer ends in <b></b></span>
 <span class="cr-seats" data-o="seats" hidden>🔥 Only <b></b> seats left</span>
 <span>🎓 <span data-o="range">Play Group to Intermediate</span></span>
 </div>
 <div class="cr-cta">
-<a href="#enrol" class="btn btn-orange"><i class="fas fa-user-plus"></i> Enroll now</a>
+<a href="#packages" class="btn btn-orange"><i class="fas fa-gem"></i> See packages</a>
 <a href="https://wa.me/923440807888?text=Assalam+o+Alaikum%2C+I+want+to+know+about+the+Online+Classroom+offer." target="_blank" rel="noopener" class="btn btn-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
 </div>
 <p class="cr-closed" data-o="closed" hidden></p>
@@ -134,6 +135,17 @@ Student Point Academy
 </div>
 </section>
 
+<section class="section section-alt" id="packages">
+<div class="container">
+<div class="section-header fade-in visible">
+<span class="section-label">Packages</span>
+<h2 class="section-title">Silver, Gold &amp; Diamond</h2>
+<p class="section-subtitle">Pick your class group, then the package. Higher packages give more one-to-one time with the teacher every day.</p>
+</div>
+<div data-o="packages"></div>
+</div>
+</section>
+
 <section class="section">
 <div class="container">
 <div class="section-header fade-in visible">
@@ -147,7 +159,7 @@ Student Point Academy
 <li><span>4</span><b>Upload &amp; get feedback</b><p>Send photos, PDF or a voice note. The teacher replies with stars, comments or a voice correction.</p></li>
 </ol>
 <div class="cr-grid">
-<div class="cr-card"><h3>✅ What you get</h3><ul class="cr-perks" data-o="perks"></ul></div>
+<div class="cr-card"><h3>✅ Included in every package</h3><ul class="cr-perks" data-o="perks"></ul></div>
 <div class="cr-card"><h3>🎓 Classes included</h3><div class="cr-classes" data-o="classes"></div><p class="cr-note">One monthly fee — all the online classroom features for your class. Renew from the student portal each month.</p></div>
 </div>
 </div>
@@ -162,10 +174,11 @@ Student Point Academy
 <div class="pay-card" style="margin-top:18px">
 <div class="pay-row"><span>Easypaisa account</span><strong>0344-0807888</strong></div>
 <div class="pay-row"><span>Account title</span><strong>Muhammad Ijaz</strong></div>
-<div class="pay-row"><span>Amount</span><strong>Rs. <span data-o="price">500</span></strong></div>
+<div class="pay-row"><span>Amount</span><strong id="payAmt">Choose class &amp; package</strong></div>
 </div>
 <ol class="cr-paysteps">
-<li>Send <b>Rs. <span data-o="price">500</span></b> to <b>0344-0807888</b> by Easypaisa (app or shop).</li>
+<li>Choose the class and package in the form — the amount appears above.</li>
+<li>Send that amount to <b>0344-0807888</b> by Easypaisa (app or shop).</li>
 <li>Copy the <b>Transaction ID (TID)</b> from the SMS.</li>
 <li>Fill the form and press <b>Submit enrolment</b>.</li>
 </ol>
@@ -176,6 +189,8 @@ Student Point Academy
 <div class="form-field"><label for="eName">Student's name *</label><input id="eName" required maxlength="60" autocomplete="off" placeholder="e.g. Ayesha Khan"></div>
 <div class="form-field"><label for="eFather">Father's / guardian's name *</label><input id="eFather" required maxlength="60" placeholder="e.g. Muhammad Aslam"></div>
 <div class="form-field"><label for="eClass">Class *</label><select id="eClass" required></select></div>
+<div class="form-field"><label for="eTier">Package *</label><select id="eTier" required></select></div>
+<div class="form-field full cr-amt" id="eAmtBox" hidden>Monthly fee: <b id="eAmt"></b></div>
 <div class="form-field"><label for="eGender">Student is</label><select id="eGender"><option value="M">Boy</option><option value="F">Girl</option></select></div>
 <div class="form-field"><label for="ePhone">WhatsApp number *</label><input id="ePhone" type="tel" required placeholder="03XX-XXXXXXX" autocomplete="tel"></div>
 <div class="form-field"><label for="eCity">City / area</label><input id="eCity" maxlength="60" placeholder="e.g. Mirpur AJK"></div>
@@ -203,6 +218,8 @@ Student Point Academy
 <details><summary>Do I need a laptop?</summary><p>No. A phone with internet is enough — take photos of homework and record voice notes in the browser.</p></details>
 <details><summary>How are Duas and Qirat taught?</summary><p>The teacher posts the Dua with Arabic text and records it in their own voice. The student listens, practises and sends a recording back. The teacher replies with corrections — in writing or by voice.</p></details>
 <details><summary>Which classes can join?</summary><p><span data-o="range">Play Group to Intermediate</span>. Each student sees only their own class's work.</p></details>
+<details><summary>What is the difference between Silver, Gold and Diamond?</summary><p>The main difference is daily one-to-one time with the teacher: 15 minutes (Silver), 30 minutes (Gold) or 1 hour with individual consultancy (Diamond). Higher packages also get faster checking, voice feedback and progress reports.</p></details>
+<details><summary>Can I try before paying?</summary><p>Yes — a free demo class for 1 day. Message us on WhatsApp to book it.</p></details>
 <details><summary>How do I renew?</summary><p>From the student portal → <b>Subscription</b>. Pay by Easypaisa and enter the TID. Students keep the price they joined with.</p></details>
 </div>
 </section>

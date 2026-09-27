@@ -980,3 +980,32 @@ font-size: 15px; text-align: center; margin-top: 12px; align-items: center; just
   .offer-strip { font-size: 13px; gap: 6px 10px; }
 }
 .cr-done[hidden], .offer-band[hidden] { display: none; }
+
+/* Silver / Gold / Diamond packages */
+.cr-price > span:first-child { font-weight: 700; opacity: .9; }
+.cr-demo { font-weight: 700; margin: 0 0 18px; }
+.cr-demo a { color: #FFD166; text-decoration: underline; }
+.offer-band__box .cr-demo { color: var(--green); margin: 0; }
+.offer-band__tiers { font-weight: 800; color: var(--text-dk); margin: 0; }
+.offer-band__price > span:first-child { font-size: 14px; }
+.offer-pop__price > span:first-child { color: var(--text-md); font-weight: 700; }
+.pkg-switch { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 26px; }
+.pkg-switch button { border: 2px solid var(--border); background: #fff; color: var(--text-dk); font: 800 15px var(--font-body); padding: 10px 18px; border-radius: 50px; cursor: pointer; }
+.pkg-switch button[aria-selected="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+.pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+.pkg { position: relative; background: #fff; border: 2px solid var(--border); border-radius: var(--radius-lg); padding: 26px 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-sm); }
+.pkg--silver { border-color: #CBD5E1; }
+.pkg--gold { border-color: #F59E0B; box-shadow: 0 10px 30px rgba(245,158,11,.18); transform: translateY(-6px); }
+.pkg--diamond { border-color: #0891B2; background: linear-gradient(180deg, #ECFEFF, #fff 40%); }
+.pkg__flag { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: #F59E0B; color: #fff; font: 800 12px var(--font-body); text-transform: uppercase; letter-spacing: .06em; padding: 5px 14px; border-radius: 50px; white-space: nowrap; }
+.pkg__head { display: flex; align-items: center; gap: 10px; }
+.pkg__ic { font-size: 30px; }
+.pkg h3 { font-family: var(--font-head); font-size: 26px; }
+.pkg__price b { font-family: var(--font-head); font-size: 38px; color: var(--text-dk); line-height: 1; }
+.pkg__price span { color: var(--text-md); font-weight: 700; margin-left: 4px; }
+.pkg ul { display: grid; gap: 9px; flex: 1; }
+.pkg li { display: flex; gap: 9px; align-items: baseline; color: var(--text-md); font-size: 15px; }
+.pkg li i { color: var(--green); font-size: 12px; }
+.pkg__go { justify-content: center; width: 100%; }
+.cr-amt { background: var(--green-lt); color: var(--green); border-radius: 10px; padding: 10px 14px; font-weight: 700; display: block; }
+@media (max-width: 900px) { .pkg-grid { grid-template-columns: 1fr; } .pkg--gold { transform: none; } }

@@ -54,7 +54,17 @@ To switch this off, set `enabled: false` in `portal/js/school.js` → `SUBSCRIPT
 
 ## Online Classroom (Play Group – Intermediate)
 
-A paid add-on for students who learn from home. **The offer is live-editable:** Admin → **Online classroom** → *Offer & website banner* (price, crossed-out price, end date with countdown, seat limit, classes, perks, on/off).
+A paid add-on for students who learn from home, in three monthly packages:
+
+| Class group | 🥈 Silver | 🥇 Gold | 💎 Diamond |
+|---|---|---|---|
+| Play Group – Class 5 | Rs. 1,000 | Rs. 2,500 | Rs. 5,000 |
+| Class 6 – 8 | Rs. 1,500 | Rs. 3,000 | Rs. 6,000 |
+| Class 9 – 12 | Rs. 2,500 | Rs. 5,000 | Rs. 10,000 |
+
+Silver = 15 min daily one-to-one time with the teacher, Gold = 30 min + voice feedback & progress report, Diamond = 1 hour + individual consultancy & same-day checking. Free demo class for 1 day.
+
+**Everything is live-editable:** Admin → **Online classroom** → *Offer & website banner* (package prices and names, what each includes, free-demo note, end date with countdown, seat limit, on/off). Teachers see each student's package next to their submissions and in voice chat.
 
 | Who | What they can do |
 |---|---|

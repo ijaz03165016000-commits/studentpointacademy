@@ -269,7 +269,8 @@ export function buildDemoSchool() {
   // Ayesha (Class 5) is on the Online Classroom plan; so are two class-mates.
   const classPosts = {}, classWork = {}, classChat = {}, classroomEnrollments = {};
   const online5 = [kidB, ...(byClass["5"] || []).filter((x) => x !== kidB).slice(0, 2)];
-  online5.forEach((sid) => { students[sid].online = true; Object.assign(users[sid], { plan: "classroom", planPrice: 500 }); });
+  const demoTiers = ["gold", "silver", "diamond"], demoPrice = { silver: 1000, gold: 2500, diamond: 5000 };
+  online5.forEach((sid, i) => { const t = demoTiers[i % 3]; Object.assign(students[sid], { online: true, onlineTier: t }); Object.assign(users[sid], { plan: "classroom", planTier: t, planPrice: demoPrice[t] }); });
   const ts = (off, h) => at(off, h);
   classPosts.cp1 = { classId: "5", kind: "dua", subject: "Quran & Duas", title: "Dua before sleeping", teacherId: "T05", teacherName: staff.T05.name, createdAt: ts(-2, 16),
     text: "Listen to the Dua, repeat it 5 times, then record yourself and send it to me. Meaning: “O Allah, in Your name I die and I live.”",
@@ -286,7 +287,7 @@ export function buildDemoSchool() {
   if (online5[1]) classWork[`cp2_${online5[1]}`] = { postId: "cp2", classId: "5", kind: "homework", postTitle: classPosts.cp2.title, teacherId: "T04", studentId: online5[1], studentName: students[online5[1]].name,
     text: "Sir, here is my homework.", files: [], audio: null, submittedAt: ts(-1, 20), status: "submitted" };
   classChat.cc1 = { studentId: kidB, teacherId: "T05", from: "staff", text: "Assalam o Alaikum Ayesha! This week we are learning the Dua before sleeping. Listen to it in the Classroom tab.", audio: null, files: [], at: ts(-2, 16), read: false };
-  classroomEnrollments["ENR-41823977001"] = { studentName: "Zoya Shahid", fatherName: "Mirza Shahid", classId: "3", gender: "F", phone: "0345-6789012", city: "Mirpur AJK", tid: "41823977001", sender: "0345-6789012", amount: 500, method: "EasyPaisa", status: "pending", submittedAt: iso(now), submittedAtTs: now.toISOString(), source: "website" };
+  classroomEnrollments["ENR-41823977001"] = { studentName: "Zoya Shahid", fatherName: "Mirza Shahid", classId: "3", gender: "F", phone: "0345-6789012", city: "Mirpur AJK", tid: "41823977001", sender: "0345-6789012", tier: "gold", amount: 2500, method: "EasyPaisa", status: "pending", submittedAt: iso(now), submittedAtTs: now.toISOString(), source: "website" };
 
   return { users, students, staff, timetable, attendance, staffAttendance, exams, homework, fees, leaves, notices, messages, subscriptions, classPosts, classWork, classChat, classroomEnrollments };
 }
