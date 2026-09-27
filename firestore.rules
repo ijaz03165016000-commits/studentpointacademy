@@ -101,7 +101,7 @@ service cloud.firestore {
             && d.designation == r.get('designation', '');
       }
       allow get: if true;
-      allow list: if isAdmin();   // only the admin can list cards (used by "Start fresh")
+      allow list: if false;
       allow create: if code.size() == 12 && request.resource.data.status == 'valid' && (
                        isOffice()
                     || (request.resource.data.kind == 'student' && isStudent(request.resource.data.ref) && sameStudent(request.resource.data))
@@ -173,7 +173,6 @@ service cloud.firestore {
                     && ((role() == 'parent' && request.resource.data.from == 'parent') || (isStaff() && request.resource.data.from == 'staff'))
                     && request.resource.data.text is string && request.resource.data.text.size() <= 1000;
       allow update: if isParty(resource.data) && onlyChanges(['read']);
-      allow delete: if isAdmin();
     }
 
     /* ---------------- Online Classroom ---------------- */

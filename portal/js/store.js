@@ -154,30 +154,6 @@ export async function update(col, id, patch) {
   lsSet(col, all);
 }
 
-/* Delete many documents quickly (batches of 400). Returns how many were deleted. */
-export async function removeMany(col, ids, onProgress = () => {}) {
-  if (IS_LIVE) {
-    const { fs, db } = await fb();
-    for (let i = 0; i < ids.length; i += 400) {
-      const b = fs.writeBatch(db);
-      ids.slice(i, i + 400).forEach((id) => b.delete(fs.doc(db, ...String(id).split("/"))));
-      await b.commit(); onProgress(Math.min(i + 400, ids.length));
-    }
-    return ids.length;
-  }
-  await ensureSeed();
-  const all = lsGet(col); ids.forEach((id) => delete all[String(id).split("/").pop()]); lsSet(col, all); onProgress(ids.length);
-  return ids.length;
-}
-
-/* Paths of a file's pieces (files/{id}/parts/{n}) — for clean-up */
-export async function filePartPaths(fileId) {
-  if (!IS_LIVE) return [];
-  const { fs, db } = await fb();
-  const snap = await fs.getDocs(fs.collection(db, "files", fileId, "parts"));
-  return snap.docs.map((d) => `files/${fileId}/parts/${d.id}`);
-}
-
 export async function remove(col, id) {
   if (IS_LIVE) {
     const { fs, db } = await fb();
