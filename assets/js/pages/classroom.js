@@ -52,7 +52,7 @@ form.addEventListener("submit", async (e) => {
   if (!v("eClass")) return showErr("Please select the class.", $("eClass"));
   if (!amount()) return showErr("This package is not available for the selected class. Choose another package.", $("eTier"));
   if (!PHONE.test(v("ePhone"))) return showErr("WhatsApp number should look like 03XX-XXXXXXX.", $("ePhone"));
-  if (!/^[A-Z0-9]{6,20}$/.test(tid)) return showErr("Enter the Transaction ID exactly as in the Easypaisa SMS (letters and numbers only).", $("eTid"));
+  if (!/^[A-Z0-9]{6,20}$/.test(tid)) return showErr("Enter the Transaction ID exactly as in the NayaPay SMS (letters and numbers only).", $("eTid"));
   if (!PHONE.test(v("eSender"))) return showErr("'Paid from' number should look like 03XX-XXXXXXX.", $("eSender"));
   const file = $("eReceipt").files[0] ? await shrinkImage($("eReceipt").files[0]) : null;
   if (file && file.size > 2 * 1024 * 1024) return showErr("The screenshot must be smaller than 2 MB.", $("eReceipt"));
@@ -62,7 +62,7 @@ form.addEventListener("submit", async (e) => {
     const price = amount(), tierName = offer.tiers.find((x) => x.id === v("eTier"))?.name || v("eTier");
     const data = {
       studentName: v("eName"), fatherName: v("eFather"), classId: v("eClass"), gender: v("eGender"),
-      phone: v("ePhone"), city: v("eCity"), tid, sender: v("eSender"), tier: v("eTier"), amount: price, method: "EasyPaisa",
+      phone: v("ePhone"), city: v("eCity"), tid, sender: v("eSender"), tier: v("eTier"), amount: price, method: "NayaPay",
       status: "pending", submittedAt: new Date().toISOString().slice(0, 10), submittedAtTs: new Date().toISOString(), source: "website"
     };
     if (file) { try { data.receipt = await store.uploadFile(file, { visitor: true }); } catch (x) { console.warn("Receipt upload failed", x); } }
@@ -70,7 +70,7 @@ form.addEventListener("submit", async (e) => {
     if (!store.IS_LIVE && await store.get("classroomEnrollments", id)) throw new Error("dup");
     await store.set("classroomEnrollments", id, data).catch((x) => { throw /permission|insufficient/i.test(x.code || x.message) ? new Error("dup") : x; });
 
-    const msg = `Assalam o Alaikum! I have enrolled in the Online Classroom.\n\nStudent: ${data.studentName}\nFather: ${data.fatherName}\nClass: ${classLabel(data.classId)}\nWhatsApp: ${data.phone}\nPackage: ${tierName}\nPaid: Rs. ${price} (Easypaisa)\nTID: ${tid}\nFrom: ${data.sender}`;
+    const msg = `Assalam o Alaikum! I have enrolled in the Online Classroom.\n\nStudent: ${data.studentName}\nFather: ${data.fatherName}\nClass: ${classLabel(data.classId)}\nWhatsApp: ${data.phone}\nPackage: ${tierName}\nPaid: Rs. ${price} (NayaPay)\nTID: ${tid}\nFrom: ${data.sender}`;
     $("doneTo").textContent = data.phone;
     $("doneWa").href = "https://wa.me/923440807888?text=" + encodeURIComponent(msg);
     form.hidden = true; $("enrolDone").hidden = false;

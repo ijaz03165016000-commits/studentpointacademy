@@ -410,7 +410,7 @@ export function adminClassroom(byName) {
           <div class="form-status full" role="alert"></div>
           <div class="full" style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn--navy" type="submit">Save offer</button><a class="btn btn--outline" href="../classroom.html" target="_blank" rel="noopener">View on website</a></div>
         </form>`)}
-        ${card("How it works", `<ol class="pay-steps"><li>Visitors see the offer on the home page and at <b>studentpointacademy.online/classroom.html</b>.</li><li>They pay by EasyPaisa and send the TID with the enrolment form.</li><li>You check the TID here under <b>Enrolments</b> and press <b>Approve</b> — this creates the student login and opens the classroom for ${offer.days} days.</li><li>They renew from their portal (Subscription page) at the price they joined with.</li></ol><p class="muted small">Changes show on the website straight away. Existing students keep the price they joined at.</p>`)}
+        ${card("How it works", `<ol class="pay-steps"><li>Visitors see the offer on the home page and at <b>studentpointacademy.online/classroom.html</b>.</li><li>They pay by NayaPay and send the TID with the enrolment form.</li><li>You check the TID here under <b>Enrolments</b> and press <b>Approve</b> — this creates the student login and opens the classroom for ${offer.days} days.</li><li>They renew from their portal (Subscription page) at the price they joined with.</li></ol><p class="muted small">Changes show on the website straight away. Existing students keep the price they joined at.</p>`)}
       </div>`;
       $$("[data-tab]").forEach((b) => (b.onclick = () => go(b.dataset.tab)));
       $("#of").onsubmit = async (e) => {
@@ -437,7 +437,7 @@ export function adminClassroom(byName) {
     const list = all.filter((x) => !status || x.status === status);
     el.innerHTML = tabs + `
     <div class="grid grid--kpi">
-      ${kpi({ label: "Waiting for approval", value: all.filter((x) => x.status === "pending").length, sub: "Check each TID in EasyPaisa", ic: "clock", tone: all.some((x) => x.status === "pending") ? "red" : "green" })}
+      ${kpi({ label: "Waiting for approval", value: all.filter((x) => x.status === "pending").length, sub: "Check each TID in NayaPay", ic: "clock", tone: all.some((x) => x.status === "pending") ? "red" : "green" })}
       ${kpi({ label: "Packages", value: "from " + money(offer.price), sub: offer.open ? (offer.endsOn ? "Ends " + fmtDate(offer.endsOn, false) : "Running") : "Closed", ic: "star", tone: offer.open ? "gold" : "red", href: "#/enrolments?tab=offer" })}
       ${kpi({ label: "Seats", value: offer.seats ? `${offer.taken}/${offer.seats}` : offer.taken, sub: offer.seats ? `${offer.seatsLeft} left` : "No limit", ic: "users" })}
     </div>
@@ -458,7 +458,7 @@ export function adminClassroom(byName) {
     }));
     $$("[data-no]").forEach((b) => (b.onclick = () => {
       const x = all.find((y) => y.id === b.dataset.no);
-      dialog({ title: "Reject — " + x.studentName, submit: "Reject", body: field("rr", "Reason", `<select id="rr" name="reason">${options(["TID not found in EasyPaisa", "Amount received is less", "Class not included in the offer", "Duplicate enrolment"])}</select>`),
+      dialog({ title: "Reject — " + x.studentName, submit: "Reject", body: field("rr", "Reason", `<select id="rr" name="reason">${options(["TID not found in NayaPay", "Amount received is less", "Class not included in the offer", "Duplicate enrolment"])}</select>`),
         onSubmit: async (f) => { await store.update("classroomEnrollments", x.id, { status: "rejected", reason: f.reason.value, decidedAt: today(), decidedBy: byName }); toast("Enrolment rejected"); reload(); } });
     }));
     $$("[data-ok]").forEach((b) => (b.onclick = async () => {
@@ -468,7 +468,7 @@ export function adminClassroom(byName) {
       const roll = Math.max(0, ...students.filter((s) => s.classId === x.classId).map((s) => s.rollNo || 0)) + 1;
       dialog({
         title: "Approve — " + x.studentName, submit: "Approve & create login",
-        body: `<p>Before approving, confirm in your EasyPaisa app that <b>${money(x.amount)}</b> with TID <b>${esc(x.tid)}</b> reached the academy account.</p>
+        body: `<p>Before approving, confirm in your NayaPay app that <b>${money(x.amount)}</b> with TID <b>${esc(x.tid)}</b> reached the academy account.</p>
         <div class="form">
           ${field("a-cls", "Class", `<select id="a-cls" name="classId">${options(CLASSES.filter((c) => CLASSROOM.eligible.includes(c.id)).map((c) => [c.id, c.name]), x.classId)}</select>`)}
           ${field("a-id", "Student ID (login)", `<input id="a-id" name="sid" required value="${sid}" style="text-transform:uppercase">`)}
@@ -488,7 +488,7 @@ export function adminClassroom(byName) {
           }
           await store.set("students", id, { name: x.studentName, fatherName: x.fatherName || "", classId, rollNo: classId === x.classId ? roll : 1, gender: x.gender || "M", dob: "", phone: x.phone || "", address: x.city || "", admissionDate: today(), subjects: c.subjects.slice(), status: "active", parentId, online: true, source: "online-classroom" });
           const payId = "TID-" + String(x.tid).toUpperCase();
-          const payDoc = { userId: uid, studentId: id, name: x.studentName, classId, plan: "classroom", tier: x.tier || "silver", amount: x.amount, method: "EasyPaisa", tid: x.tid, sender: x.sender || "", submittedAt: x.submittedAt || today(), submittedAtTs: x.submittedAtTs || new Date().toISOString(), status: "pending", source: "website" };
+          const payDoc = { userId: uid, studentId: id, name: x.studentName, classId, plan: "classroom", tier: x.tier || "silver", amount: x.amount, method: "NayaPay", tid: x.tid, sender: x.sender || "", submittedAt: x.submittedAt || today(), submittedAtTs: x.submittedAtTs || new Date().toISOString(), status: "pending", source: "website" };
           let subId = payId;
           try { await store.set("subscriptions", payId, payDoc); } catch { subId = await store.add("subscriptions", payDoc); }
           const until = await approvePayment({ id: subId, userId: uid, plan: "classroom", tier: x.tier || "silver", amount: x.amount, days: offer.days }, byName);

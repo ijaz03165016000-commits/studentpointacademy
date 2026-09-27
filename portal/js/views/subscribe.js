@@ -26,16 +26,16 @@ export const tierName = (t) => (t ? t[0].toUpperCase() + t.slice(1) : "");
 
 const payBox = (amount, days = SUB.days) => `
   <div class="pay">
-    <div class="pay__head"><span class="pay__logo">easypaisa</span><span class="pay__amt"><span data-amt>${money(amount)}</span><small> / ${days} days</small></span></div>
+    <div class="pay__head"><span class="pay__logo">nayapay</span><span class="pay__amt"><span data-amt>${money(amount)}</span><small> / ${days} days</small></span></div>
     <div class="pay__row"><span>Account number</span><b id="acc">${esc(SUB.account)}</b><button type="button" class="linkbtn" id="copyAcc">Copy</button></div>
     <div class="pay__row"><span>Account title</span><b>${esc(SUB.title)}</b></div>
     <div class="pay__row"><span>Amount</span><b data-amt>${money(amount)}</b></div>
   </div>`;
 
 const steps = (amount) => `<ol class="pay-steps">
-  <li>Open the <b>${esc(SUB.method)}</b> app (or visit any ${esc(SUB.method)} shop) and send <b data-amt>${money(amount)}</b> to the account above.</li>
+  <li>Open the <b>${esc(SUB.method)}</b> app (or any bank / Easypaisa / JazzCash app, choosing ${esc(SUB.method)} as the bank) and send <b data-amt>${money(amount)}</b> to the account above.</li>
   <li>Check that the name shown is <b>${esc(SUB.title)}</b> before you confirm.</li>
-  <li>Copy the <b>Transaction ID (TID)</b> from the SMS or the app receipt.</li>
+  <li>Copy the <b>Transaction ID</b> from the app receipt or SMS.</li>
   <li>Enter it below. Your portal opens as soon as the payment is verified.</li></ol>`;
 
 const planPicker = (plans, sel) => plans.length < 2 ? `<input type="hidden" name="plan" value="${esc(plans[0].id)}">` : `<fieldset class="plans full"><legend>Choose your plan</legend>${plans.map((p) => `
@@ -185,7 +185,7 @@ export function subscriptionsAdmin(byName) {
     const expiring = users.filter((u) => { const d = daysLeft(u); return d >= 0 && d <= SUB.remindDays; }).length;
     el.innerHTML = `
     <div class="grid grid--kpi">
-      ${kpi({ label: "Waiting for verification", value: pendingN, sub: "Check each TID in your EasyPaisa app", ic: "clock", tone: pendingN ? "red" : "green", href: "#/subscriptions?s=pending" })}
+      ${kpi({ label: "Waiting for verification", value: pendingN, sub: "Check each TID in your NayaPay app", ic: "clock", tone: pendingN ? "red" : "green", href: "#/subscriptions?s=pending" })}
       ${kpi({ label: "Active students", value: `${active}/${users.length}`, sub: `${users.length - active} not subscribed`, ic: "school", tone: "green" })}
       ${kpi({ label: "Collected this month", value: money(collected), sub: "Portal + Online Classroom", ic: "money", tone: "gold" })}
       ${kpi({ label: "Ending soon", value: expiring, sub: `within ${SUB.remindDays} days`, ic: "calendar" })}
@@ -212,7 +212,7 @@ export function subscriptionsAdmin(byName) {
       const s = subs.find((x) => x.id === b.dataset.no);
       dialog({
         title: "Reject payment — " + s.name, submit: "Reject",
-        body: field("rj", "Reason (the student will see this)", `<select id="rj" name="reason">${options(["TID not found in EasyPaisa", "Amount received is less than " + money(s.amount), "Payment was sent to a different account", "Duplicate / already used TID"])}</select>`),
+        body: field("rj", "Reason (the student will see this)", `<select id="rj" name="reason">${options(["TID not found in NayaPay", "Amount received is less than " + money(s.amount), "Payment was sent to a different account", "Duplicate / already used TID"])}</select>`),
         onSubmit: async (f) => { await store.update("subscriptions", s.id, { status: "rejected", reason: f.reason.value, decidedAt: today(), decidedBy: byName }); toast("Payment rejected"); reload(); }
       });
     }));

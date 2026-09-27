@@ -211,7 +211,7 @@ export function studentViews(getSid, { forParent = false, header = () => "" } = 
     ${card("Fee record", b.fees.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Month</th><th>Challan no.</th><th class="num">Amount</th><th>Due date</th><th>Status</th><th>Paid on</th><th></th></tr></thead><tbody>
       ${b.fees.map((f) => `<tr><td><b>${fmtMonth(f.month)}</b></td><td class="nowrap">${esc(f.challanNo)}</td><td class="num">${money(f.amount)}</td><td class="nowrap">${fmtDate(f.due)}</td><td>${statusPill(feeState(f))}</td><td class="nowrap">${f.paidOn ? fmtDate(f.paidOn) + `<div class="muted small">${esc(f.receiptNo)}</div>` : "—"}</td><td><button class="linkbtn" data-ch="${esc(f.id)}">${f.status === "paid" ? "Receipt" : "Challan"}</button></td></tr>`).join("")}
     </tbody></table></div>` : empty("No fee records yet", "money"))}
-    <p class="muted small" style="margin-top:12px">Pay at the academy office or by EasyPaisa / JazzCash to ${esc(SITE.phone)} and send the receipt on WhatsApp. Late fee of ${money(LATE_FEE)} applies after the due date. Questions: ${esc(SITE.phone)}.</p>`;
+    <p class="muted small" style="margin-top:12px">Pay at the academy office or by NayaPay to ${esc(SITE.phone)} and send the receipt on WhatsApp. Late fee of ${money(LATE_FEE)} applies after the due date. Questions: ${esc(SITE.phone)}.</p>`;
     $$("[data-ch]").forEach((btn) => (btn.onclick = () => showChallan(b.fees.find((f) => f.id === btn.dataset.ch), b.student)));
   }
 
