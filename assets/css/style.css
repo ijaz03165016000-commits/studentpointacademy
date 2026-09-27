@@ -1009,3 +1009,8 @@ font-size: 15px; text-align: center; margin-top: 12px; align-items: center; just
 .pkg__go { justify-content: center; width: 100%; }
 .cr-amt { background: var(--green-lt); color: var(--green); border-radius: 10px; padding: 10px 14px; font-weight: 700; display: block; }
 @media (max-width: 900px) { .pkg-grid { grid-template-columns: 1fr; } .pkg--gold { transform: none; } }
+
+/* accepted wallets */
+.wallets { display: flex; flex-wrap: wrap; gap: 6px; }
+.wallets .w { font-weight: 800; font-size: 13px; padding: 5px 11px; border-radius: 50px; background: #fff; }
+.w--naya { color: #E4572E; } .w--sada { color: #0F9D8A; } .w--ep { color: #16A34A; } .w--jc { color: #B91C1C; }

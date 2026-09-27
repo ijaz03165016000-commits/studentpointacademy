@@ -124,7 +124,8 @@ export const SUBSCRIPTION = {
   enabled: true,
   amount: 200,               // Rs. per period
   days: 30,                  // access given per approved payment
-  method: "NayaPay",
+  method: "NayaPay / SadaPay / Easypaisa / JazzCash",   // all four use the same number and title
+  methods: ["NayaPay", "SadaPay", "Easypaisa", "JazzCash"],
   account: "0344-0807888",
   title: "Muhammad Ijaz",
   remindDays: 5              // show a renewal reminder this many days before expiry

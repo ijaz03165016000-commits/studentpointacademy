@@ -26,14 +26,15 @@ export const tierName = (t) => (t ? t[0].toUpperCase() + t.slice(1) : "");
 
 const payBox = (amount, days = SUB.days) => `
   <div class="pay">
-    <div class="pay__head"><span class="pay__logo">nayapay</span><span class="pay__amt"><span data-amt>${money(amount)}</span><small> / ${days} days</small></span></div>
-    <div class="pay__row"><span>Account number</span><b id="acc">${esc(SUB.account)}</b><button type="button" class="linkbtn" id="copyAcc">Copy</button></div>
+    <div class="pay__head"><span class="pay__logo">Mobile wallet</span><span class="pay__amt"><span data-amt>${money(amount)}</span><small> / ${days} days</small></span></div>
+    <div class="pay__row pay__wallets">${SUB.methods.map((m) => `<span class="wchip">${esc(m)}</span>`).join("")}</div>
+    <div class="pay__row"><span>Account number (all wallets)</span><b id="acc">${esc(SUB.account)}</b><button type="button" class="linkbtn" id="copyAcc">Copy</button></div>
     <div class="pay__row"><span>Account title</span><b>${esc(SUB.title)}</b></div>
     <div class="pay__row"><span>Amount</span><b data-amt>${money(amount)}</b></div>
   </div>`;
 
 const steps = (amount) => `<ol class="pay-steps">
-  <li>Open the <b>${esc(SUB.method)}</b> app (or any bank / Easypaisa / JazzCash app, choosing ${esc(SUB.method)} as the bank) and send <b data-amt>${money(amount)}</b> to the account above.</li>
+  <li>Open <b>NayaPay, SadaPay, Easypaisa or JazzCash</b> and send <b data-amt>${money(amount)}</b> to the account above.</li>
   <li>Check that the name shown is <b>${esc(SUB.title)}</b> before you confirm.</li>
   <li>Copy the <b>Transaction ID</b> from the app receipt or SMS.</li>
   <li>Enter it below. Your portal opens as soon as the payment is verified.</li></ol>`;
@@ -45,7 +46,8 @@ const planPicker = (plans, sel) => plans.length < 2 ? `<input type="hidden" name
 function payForm(renew, plans, sel) {
   return `<form class="form" id="subf" novalidate>
     ${planPicker(plans, sel)}
-    ${field("s-tid", "Transaction ID (TID)", `<input id="s-tid" name="tid" required inputmode="numeric" autocomplete="off" maxlength="20" placeholder="e.g. 41823912345"><div class="field__hint">The number in your ${esc(SUB.method)} SMS, usually 11 digits.</div>`)}
+    ${field("s-m", "Paid with", `<select id="s-m" name="method">${options(SUB.methods)}</select>`)}
+    ${field("s-tid", "Transaction ID (TID)", `<input id="s-tid" name="tid" required inputmode="numeric" autocomplete="off" maxlength="20" placeholder="e.g. 41823912345"><div class="field__hint">From the app receipt or SMS.</div>`)}
     ${field("s-from", "Paid from mobile number", `<input id="s-from" name="sender" required inputmode="tel" placeholder="03XX-XXXXXXX">`)}
     <div class="form-status full" role="alert"></div>
     <div class="full"><button class="btn btn--gold" type="submit">${renew ? "Submit renewal payment" : "I have paid — submit"}</button></div>
@@ -76,7 +78,7 @@ export function wireForm(user, done, plans) {
       const DUP = "This Transaction ID has already been submitted. If you think this is a mistake, contact the academy office.";
       const docId = "TID-" + tid.toUpperCase();   // one record per TID, so a TID can't be used twice
       if (!store.IS_LIVE && await store.get("subscriptions", docId)) throw new Error(DUP);
-      await store.set("subscriptions", docId, { userId: user.id, studentId: user.linkId || user.id, name: user.name, classId: user.classId || "", plan: plan.plan || plan.id, tier: plan.tier || "", amount: plan.amount, method: SUB.method, tid, sender, submittedAt: today(), submittedAtTs: new Date().toISOString(), status: "pending" }).catch((x) => { throw /permission|insufficient/i.test(x.code || x.message) ? new Error(DUP) : x; });
+      await store.set("subscriptions", docId, { userId: user.id, studentId: user.linkId || user.id, name: user.name, classId: user.classId || "", plan: plan.plan || plan.id, tier: plan.tier || "", amount: plan.amount, method: f.method?.value || SUB.methods[0], tid, sender, submittedAt: today(), submittedAtTs: new Date().toISOString(), status: "pending" }).catch((x) => { throw /permission|insufficient/i.test(x.code || x.message) ? new Error(DUP) : x; });
       toast("Payment submitted for verification");
       done();
     } catch (x) { st.textContent = x.message; st.className = "form-status full is-err"; btn.disabled = false; }
@@ -185,7 +187,7 @@ export function subscriptionsAdmin(byName) {
     const expiring = users.filter((u) => { const d = daysLeft(u); return d >= 0 && d <= SUB.remindDays; }).length;
     el.innerHTML = `
     <div class="grid grid--kpi">
-      ${kpi({ label: "Waiting for verification", value: pendingN, sub: "Check each TID in your NayaPay app", ic: "clock", tone: pendingN ? "red" : "green", href: "#/subscriptions?s=pending" })}
+      ${kpi({ label: "Waiting for verification", value: pendingN, sub: "Check each TID in the wallet app it was paid with", ic: "clock", tone: pendingN ? "red" : "green", href: "#/subscriptions?s=pending" })}
       ${kpi({ label: "Active students", value: `${active}/${users.length}`, sub: `${users.length - active} not subscribed`, ic: "school", tone: "green" })}
       ${kpi({ label: "Collected this month", value: money(collected), sub: "Portal + Online Classroom", ic: "money", tone: "gold" })}
       ${kpi({ label: "Ending soon", value: expiring, sub: `within ${SUB.remindDays} days`, ic: "calendar" })}
@@ -196,11 +198,11 @@ export function subscriptionsAdmin(byName) {
       <button class="btn btn--outline btn--sm" id="manual">${icon("plus").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Record cash / manual payment</button>
     </div>
     ${card(`${list.length} payment${list.length === 1 ? "" : "s"}`, list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Plan</th><th>TID</th><th>Paid from</th><th class="num">Amount</th><th>Submitted</th><th>Status</th><th></th></tr></thead><tbody>
-      ${list.map((s) => `<tr><td>${person(s.name, `${s.studentId} · ${esc(className(s.classId))}`)}</td><td>${s.plan === "classroom" ? pill("Classroom" + (s.tier ? " · " + tierName(s.tier) : ""), "gold") : "Portal"}</td><td><code>${esc(s.tid)}</code></td><td class="nowrap">${esc(s.sender)}</td><td class="num">${money(s.amount)}</td><td class="nowrap">${fmtDate(s.submittedAt)}</td>
+      ${list.map((s) => `<tr><td>${person(s.name, `${s.studentId} · ${esc(className(s.classId))}`)}</td><td>${s.plan === "classroom" ? pill("Classroom" + (s.tier ? " · " + tierName(s.tier) : ""), "gold") : "Portal"}</td><td><code>${esc(s.tid)}</code></td><td class="nowrap">${esc(s.sender)}<div class="muted small">${esc(s.method || "")}</div></td><td class="num">${money(s.amount)}</td><td class="nowrap">${fmtDate(s.submittedAt)}</td>
         <td>${statusPill(s.status)}${s.validUntil ? `<div class="muted small">until ${fmtDate(s.validUntil, false)}</div>` : ""}${s.reason ? `<div class="muted small">${esc(s.reason)}</div>` : ""}</td>
         <td class="nowrap">${s.status === "pending" ? `<button class="btn btn--navy btn--sm" data-ok="${esc(s.id)}">Approve</button> <button class="btn btn--outline btn--sm" data-no="${esc(s.id)}">Reject</button>` : ""}</td></tr>`).join("")}
     </tbody></table></div>` : empty(status === "pending" ? "No payments waiting. All caught up!" : "No payments here", "money"))}
-    <p class="muted small" style="margin-top:12px">Before approving, open your ${esc(SUB.method)} app and confirm that a payment of the amount shown with this Transaction ID reached ${esc(SUB.account)}. Approving gives the student ${SUB.days} days of access (added after any time they still have).</p>`;
+    <p class="muted small" style="margin-top:12px">Before approving, open the wallet app shown (NayaPay, SadaPay, Easypaisa or JazzCash) and confirm that a payment of the amount shown with this Transaction ID reached ${esc(SUB.account)}. Approving gives the student ${SUB.days} days of access (added after any time they still have).</p>`;
     const reload = () => { refreshCounts?.(); subscriptions({ el, params, refreshCounts }); };
     $("#ss").onchange = (e) => (location.hash = "#/subscriptions?s=" + e.target.value);
     $$("[data-ok]").forEach((b) => (b.onclick = async () => {
@@ -212,7 +214,7 @@ export function subscriptionsAdmin(byName) {
       const s = subs.find((x) => x.id === b.dataset.no);
       dialog({
         title: "Reject payment — " + s.name, submit: "Reject",
-        body: field("rj", "Reason (the student will see this)", `<select id="rj" name="reason">${options(["TID not found in NayaPay", "Amount received is less than " + money(s.amount), "Payment was sent to a different account", "Duplicate / already used TID"])}</select>`),
+        body: field("rj", "Reason (the student will see this)", `<select id="rj" name="reason">${options(["TID not found in the wallet app", "Amount received is less than " + money(s.amount), "Payment was sent to a different account", "Duplicate / already used TID"])}</select>`),
         onSubmit: async (f) => { await store.update("subscriptions", s.id, { status: "rejected", reason: f.reason.value, decidedAt: today(), decidedBy: byName }); toast("Payment rejected"); reload(); }
       });
     }));
@@ -221,7 +223,7 @@ export function subscriptionsAdmin(byName) {
       body: `<div class="form">
         ${field("m-st", "Student", `<select id="m-st" name="uid">${options(users.sort((a, b) => CLASSES.findIndex((c) => c.id === a.classId) - CLASSES.findIndex((c) => c.id === b.classId) || a.loginId.localeCompare(b.loginId)).map((u) => [u.id, `${u.name} — ${u.loginId}${u.subscribedUntil >= today() ? " (active)" : ""}`]))}</select>`, "full")}
         ${field("m-plan", "Plan", `<select id="m-plan" name="plan">${options([["portal", `Student portal (${money(SUB.amount)})`], ["classroom-silver", "Online Classroom · Silver"], ["classroom-gold", "Online Classroom · Gold"], ["classroom-diamond", "Online Classroom · Diamond"]])}</select>`)}
-        ${field("m-how", "Paid by", `<select id="m-how" name="method">${options(["Cash at office", SUB.method, "Bank transfer", "Free (scholarship)"])}</select>`)}
+        ${field("m-how", "Paid by", `<select id="m-how" name="method">${options(["Cash at office", ...SUB.methods, "Bank transfer", "Free (scholarship)"])}</select>`)}
         ${field("m-ref", "Receipt / TID", `<input id="m-ref" name="ref" placeholder="optional">`)}
       </div>`,
       onSubmit: async (f) => {
