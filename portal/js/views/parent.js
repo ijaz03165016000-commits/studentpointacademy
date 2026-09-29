@@ -32,6 +32,7 @@ export const nav = [
   { id: "results", label: "Results", icon: "chart" },
   { id: "fees", label: "Fees", icon: "money" },
   { id: "homework", label: "Homework", icon: "book" },
+  { id: "remarks", label: "Teacher remarks", icon: "note" },
   { id: "timetable", label: "Timetable", icon: "calendar" },
   { id: "leave", label: "Apply leave", icon: "leave" },
   { id: "messages", label: "Message teachers", icon: "chat" },

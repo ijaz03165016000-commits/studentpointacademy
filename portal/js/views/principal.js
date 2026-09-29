@@ -4,7 +4,7 @@ import { CLASSES, className, SESSION } from "../school.js";
 import { $, esc, kpi, card, empty, pill, bars, ring, fmtDate, money, today } from "../ui.js";
 import { noticeList, profileView } from "./shared.js";
 import { idCardPage } from "./idcard.js";
-import { snapshot, schoolCharts, studentsView, attendanceOverview, resultsOverview, feesView, noticesManager, staffView, leaveApprovals, timetableView } from "./manage.js";
+import { snapshot, schoolCharts, studentsView, attendanceOverview, resultsOverview, feesView, remarksOverview, noticesManager, staffView, leaveApprovals, timetableView } from "./manage.js";
 
 let me;
 export function init(user) { me = user; }
@@ -14,6 +14,7 @@ export const nav = [
   { id: "home", label: "Overview", icon: "home" },
   { id: "attendance", label: "Attendance", icon: "checklist" },
   { id: "results", label: "Results & publishing", icon: "chart" },
+  { id: "remarks", label: "Daily remarks", icon: "note" },
   { id: "students", label: "Students", icon: "school" },
   { id: "staff", label: "Staff", icon: "teacher" },
   { id: "leaves", label: "Leave approvals", icon: "leave" },
@@ -60,6 +61,7 @@ export const views = {
   leaves: (ctx) => leaveApprovals({ byName: me.name })(ctx),
   fees: feesView({ canEdit: false }),
   timetable: timetableView({ canEdit: false }),
+  remarks: remarksOverview(),
   notices: noticesManager("Principal"),
   profile: profileView(async (u) => [["Login ID", u.loginId], ["Role", "Principal"]])
 };

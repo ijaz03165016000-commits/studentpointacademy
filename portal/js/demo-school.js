@@ -226,6 +226,19 @@ export function buildDemoSchool() {
     });
   });
 
+  /* ---- Daily teacher remarks ---- */
+  const remarks = {};
+  const RM = [["excellent", "Very attentive in class today"], ["good", "Homework done neatly"], ["attention", "Homework not done"], ["good", "Good participation and answers"], ["excellent", "Test preparation was good"], ["attention", "Talking during the lesson"], ["good", ""]];
+  let ri = 0;
+  CLASSES.filter((c) => byClass[c.id]).forEach((c) => {
+    const subj = c.subjects.find((s) => HW[s]) || c.subjects[0], t = teacherFor(subj, c.level), tn = STAFF.find((x) => x.id === t)?.name || "";
+    byClass[c.id].slice(0, 4).forEach((sid, k) => [0, 1, 3].forEach((back) => {
+      if (addDays(now, -back).getDay() === 0) return;
+      const [tag, text] = RM[(ri++ + k) % RM.length], date = iso(addDays(now, -back));
+      remarks[`${sid}_${date}_${t}`] = { studentId: sid, classId: c.id, date, teacherId: t, teacherName: tn, subject: subj, tag, text, at: date + "T19:30:00" };
+    }));
+  });
+
   /* ---- Leave requests ---- */
   const other = byClass["10"]?.[1] || kidA, other2 = byClass["10"]?.[2] || kidA;
   leaves.lv1 = { kind: "student", personId: kidA, name: students[kidA].name, classId: "9", from: iso(addDays(now, 2)), to: iso(addDays(now, 3)), reason: "Family wedding in Kotli.", status: "pending", appliedBy: "P-ASLAM", appliedAt: iso(now) };
@@ -289,5 +302,5 @@ export function buildDemoSchool() {
   classChat.cc1 = { studentId: kidB, teacherId: "T05", from: "staff", text: "Assalam o Alaikum Ayesha! This week we are learning the Dua before sleeping. Listen to it in the Classroom tab.", audio: null, files: [], at: ts(-2, 16), read: false };
   classroomEnrollments["ENR-41823977001"] = { studentName: "Zoya Shahid", fatherName: "Mirza Shahid", classId: "3", gender: "F", phone: "0345-6789012", city: "Mirpur AJK", tid: "41823977001", sender: "0345-6789012", tier: "gold", amount: 2500, method: "EasyPaisa", status: "pending", submittedAt: iso(now), submittedAtTs: now.toISOString(), source: "website" };
 
-  return { users, students, staff, timetable, attendance, staffAttendance, exams, homework, fees, leaves, notices, messages, subscriptions, classPosts, classWork, classChat, classroomEnrollments };
+  return { users, students, staff, timetable, attendance, staffAttendance, exams, homework, remarks, fees, leaves, notices, messages, subscriptions, classPosts, classWork, classChat, classroomEnrollments };
 }

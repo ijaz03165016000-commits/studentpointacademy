@@ -552,3 +552,9 @@ dialog.dlg::backdrop { background: rgba(30,58,138,.45); }
 .idc__blocked small { transform: rotate(-28deg); margin-top: 26px; color: #D90429; font: 800 .8rem var(--sans); background: rgba(255,255,255,.85); padding: 2px 8px; border-radius: 6px; }
 .blocked-banner { display: grid; gap: 4px; background: #FDECEC; border: 2px solid #D90429; color: #8B0A1A; border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 18px; }
 .blocked-banner b { font-size: 1.15rem; color: #D90429; letter-spacing: .02em; }
+
+/* inline inputs inside tables (e.g. daily remarks) */
+.tbl td > select, .tbl td > input:not([type=radio]):not([type=checkbox]) {
+  font: inherit; font-size: .92rem; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: inherit; min-height: 38px;
+}
+.tbl td > select:focus, .tbl td > input:focus { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }

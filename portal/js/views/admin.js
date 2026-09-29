@@ -6,7 +6,7 @@ import { profileView } from "./shared.js";
 import { subscriptionsAdmin, pendingCount } from "./subscribe.js";
 import { idCardPage } from "./idcard.js";
 import { adminClassroom, pendingEnrolments } from "./classroom.js";
-import { snapshot, schoolCharts, studentsView, attendanceOverview, resultsOverview, feesView, noticesManager, staffView, timetableView } from "./manage.js";
+import { snapshot, schoolCharts, studentsView, attendanceOverview, resultsOverview, feesView, remarksOverview, noticesManager, staffView, timetableView } from "./manage.js";
 
 let me;
 export function init(user) { me = user; }
@@ -23,6 +23,7 @@ export const nav = [
   { id: "subscriptions", label: "Portal subscriptions", icon: "star" },
   { id: "fees", label: "Fees", icon: "money" },
   { id: "attendance", label: "Attendance", icon: "checklist" },
+  { id: "remarks", label: "Daily remarks", icon: "note" },
   { id: "results", label: "Results", icon: "chart" },
   { id: "timetable", label: "Timetables", icon: "calendar" },
   { id: "notices", label: "Portal notices", icon: "bell" },
@@ -139,6 +140,7 @@ export const views = {
   attendance: attendanceOverview({ canMarkStaff: true }),
   results: resultsOverview({ canPublish: false }),
   timetable: timetableView({ canEdit: true }),
+  remarks: remarksOverview(),
   notices: noticesManager("Academy Office"),
   subscriptions: (ctx) => subscriptionsAdmin(me.name)(ctx),
   enrolments: (ctx) => adminClassroom(me.name)(ctx),

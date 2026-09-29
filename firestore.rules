@@ -134,6 +134,11 @@ service cloud.firestore {
                     || (isStaff() && resource.data.published == false && onlyChanges(['subjects']));
       allow delete: if isOffice();
     }
+    match /remarks/{id} {
+      allow read: if isTeam() || canSeeStudent(resource.data.studentId);
+      allow create: if isOffice() || (isStaff() && request.resource.data.teacherId == me().linkId);
+      allow update, delete: if isOffice() || (isStaff() && resource.data.teacherId == me().linkId);
+    }
     match /homework/{id} {
       allow read: if isTeam() || inClass(resource.data.classId);
       allow create: if isOffice() || (isStaff() && request.resource.data.teacherId == me().linkId);

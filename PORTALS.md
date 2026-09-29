@@ -107,3 +107,10 @@ firestore.rules     security rules for website + portals
 
 - **Logins & passwords** now shows each login's password (admin only). Firebase can't reveal passwords, so the portal keeps its own copy in the `passwords` collection: saved when a login is created, when someone changes their password, and each time someone signs in.
 - **Re-publish `firestore.rules`** after this update (it adds the admin-only `passwords` collection). Until then the column shows "Rules not published".
+
+## Daily teacher remarks
+
+- Teachers: **Daily remarks** — pick class, subject and date, give any student a rating (Excellent / Good / Needs attention) and a short remark (common phrases are suggested). Saved per student, per day, per teacher.
+- Students and parents: **Teacher remarks** page, plus the latest three on the dashboard.
+- Principal and admin: **Daily remarks** page (all remarks for a day, filter by class and rating) and remarks inside each student's View card.
+- **Re-publish `firestore.rules`** (adds the `remarks` collection).

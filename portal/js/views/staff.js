@@ -7,7 +7,7 @@ import {
 } from "../ui.js";
 import { idCardPage, blockedBanner } from "./idcard.js";
 import { staffClassroom, staffCounts } from "./classroom.js";
-import { timetableGrid, todayList, noticesView, noticeList, noticesFor, profileView, messagesView, unreadCount, currentPeriod } from "./shared.js";
+import { timetableGrid, todayList, noticesView, noticeList, noticesFor, profileView, messagesView, unreadCount, currentPeriod, REMARK_TAGS, REMARK_PHRASES, remarkTag } from "./shared.js";
 
 let me, myId, myClasses = [];
 
@@ -26,6 +26,7 @@ export const nav = [
   { id: "attendance", label: "Mark attendance", icon: "checklist" },
   { id: "marks", label: "Enter marks", icon: "edit" },
   { id: "homework", label: "Homework diary", icon: "book" },
+  { id: "remarks", label: "Daily remarks", icon: "note" },
   { id: "timetable", label: "My timetable", icon: "calendar" },
   { id: "students", label: "My students", icon: "users" },
   { id: "leaves", label: "Leave", icon: "leave" },
@@ -307,10 +308,62 @@ async function leaves({ el, user }) {
   };
 }
 
+/* ---------------- Daily remarks ---------------- */
+async function remarks({ el, params }) {
+  const classes = me.classTeacherOf ? [me.classTeacherOf, ...myClasses.filter((c) => c !== me.classTeacherOf)] : myClasses;
+  if (!classes.length) { el.innerHTML = card("Daily remarks", empty("You have no classes assigned yet.")); return; }
+  const classId = classes.includes(params.c) ? params.c : classes[0];
+  const date = params.d && params.d <= today() ? params.d : today();
+  const subs = mySubjects(classId);
+  const subject = params.s !== undefined && (params.s === "" || subs.includes(params.s)) ? params.s : (subs[0] || "");
+  const [students, existing] = await Promise.all([store.list("students", { classId }), store.list("remarks", { classId, date }).catch(() => [])]);
+  const active = students.filter((s) => s.status !== "left").sort((a, b) => a.rollNo - b.rollNo);
+  const mine = Object.fromEntries(existing.filter((r) => r.teacherId === myId).map((r) => [r.studentId, r]));
+  const others = existing.filter((r) => r.teacherId !== myId);
+  el.innerHTML = `
+  <div class="toolbar">
+    ${field("rc", "Class", `<select id="rc">${options(classes.map((c) => [c, className(c) + (c === me.classTeacherOf ? " (my class)" : "")]), classId)}</select>`)}
+    ${field("rs", "Subject", `<select id="rs">${options([...subs.map((x) => [x, x]), ["", "General / class teacher"]], subject)}</select>`)}
+    ${field("rd", "Date", `<input id="rd" type="date" value="${date}" max="${today()}">`)}
+  </div>
+  <p class="muted small">Write a short remark for any student — leave the rest blank. Students and parents see your remarks in their portal. ${Object.keys(mine).length ? `You already wrote ${Object.keys(mine).length} remark${Object.keys(mine).length > 1 ? "s" : ""} for ${fmtDate(date)} — change and save again.` : ""}</p>
+  <datalist id="rphr">${REMARK_PHRASES.map((p) => `<option value="${esc(p)}">`).join("")}</datalist>
+  <form id="rmf">
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Roll</th><th>Student</th><th>Rating</th><th style="min-width:260px">Remark</th></tr></thead><tbody>
+    ${active.map((s) => { const r = mine[s.id] || {}; return `<tr><td>${s.rollNo}</td><td>${person(s.name, s.id)}</td>
+      <td><select name="tag_${esc(s.id)}" aria-label="Rating for ${esc(s.name)}"><option value="">—</option>${options(REMARK_TAGS.map(([k, l]) => [k, l]), r.tag || "")}</select></td>
+      <td><input name="txt_${esc(s.id)}" list="rphr" maxlength="300" placeholder="e.g. Very attentive in class today" value="${esc(r.text || "")}" style="width:100%" aria-label="Remark for ${esc(s.name)}"></td></tr>`; }).join("") || `<tr><td colspan="4">${empty("No students in this class")}</td></tr>`}
+    </tbody></table></div>
+    <div class="sticky-save"><button class="btn btn--navy" type="submit">Save remarks</button><span id="rm-sum" class="muted"></span></div>
+  </form>
+  ${others.length ? card(`Other teachers' remarks — ${fmtDate(date)}`, `<ul class="list">${others.map((r) => `<li><div class="list__main"><b>${esc(active.find((s) => s.id === r.studentId)?.name || r.studentId)}</b>${r.text ? `<div>${esc(r.text)}</div>` : ""}<div class="list__meta">${esc(r.teacherName)}${r.subject ? " · " + esc(r.subject) : ""}</div></div>${remarkTag(r.tag)}</li>`).join("")}</ul>`) : ""}`;
+  const go = () => (location.hash = `#/remarks?c=${encodeURIComponent($("#rc").value)}&s=${encodeURIComponent($("#rs").value)}&d=${$("#rd").value}`);
+  $("#rc").onchange = () => (location.hash = `#/remarks?c=${encodeURIComponent($("#rc").value)}&d=${$("#rd").value}`);
+  $("#rs").onchange = go; $("#rd").onchange = go;
+  const sum = () => { const n = active.filter((s) => $("#rmf").elements["txt_" + s.id].value.trim() || $("#rmf").elements["tag_" + s.id].value).length; $("#rm-sum").textContent = n ? `${n} student${n > 1 ? "s" : ""} with a remark` : ""; };
+  sum(); $("#rmf").addEventListener("input", sum);
+  $("#rmf").onsubmit = async (e) => {
+    e.preventDefault(); const f = e.currentTarget; let saved = 0, removed = 0;
+    e.submitter && (e.submitter.disabled = true);
+    try {
+      for (const s of active) {
+        const text = f.elements["txt_" + s.id].value.trim(), tag = f.elements["tag_" + s.id].value, id = `${s.id}_${date}_${myId}`;
+        if (text || tag) { await store.set("remarks", id, { studentId: s.id, classId, date, teacherId: myId, teacherName: me.name, subject, tag, text, at: new Date().toISOString() }); saved++; }
+        else if (mine[s.id]) { await store.remove("remarks", id); removed++; }
+      }
+      toast(saved || removed ? `Saved ${saved} remark${saved === 1 ? "" : "s"}${removed ? `, removed ${removed}` : ""}` : "Nothing to save — write a remark first");
+      remarks({ el, params: { c: classId, d: date, s: subject } });
+    } catch (err) {
+      e.submitter && (e.submitter.disabled = false);
+      toast(/permission/i.test(err.message) ? "Couldn't save — the office needs to publish the latest firestore.rules" : err.message);
+    }
+  };
+}
+
 export const parentOf = { cpost: "classroom" };
 export const views = {
   ...staffClassroom(() => ({ me, myId, myClasses })),
-  home, attendance, marks, homework, timetable, students, leaves,
+  home, attendance, marks, homework, remarks, timetable, students, leaves,
   idcard: idCardPage("staff"),
   messages: messagesView({ side: "staff" }),
   notices: noticesView("staff"),

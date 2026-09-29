@@ -18,6 +18,7 @@ export const nav = [
   { id: "results", label: "Results", icon: "chart" },
   { id: "timetable", label: "Timetable", icon: "calendar" },
   { id: "homework", label: "Homework", icon: "book" },
+  { id: "remarks", label: "Teacher remarks", icon: "note" },
   { id: "fees", label: "Fees", icon: "money" },
   { id: "leave", label: "Leave", icon: "leave" },
   { id: "notices", label: "Notices", icon: "bell" },

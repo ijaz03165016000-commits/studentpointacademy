@@ -60,6 +60,27 @@ export function attendanceCalendar(docs, sid, ym) {
 }
 
 /* ==========================================================
+   Daily teacher remarks
+   remarks/{sid}_{date}_{teacherId}: { studentId, classId, date, teacherId,
+   teacherName, subject, tag, text, at }
+   ========================================================== */
+export const REMARK_TAGS = [["excellent", "Excellent", "green"], ["good", "Good", ""], ["attention", "Needs attention", "red"]];
+export const remarkTag = (t) => { const x = REMARK_TAGS.find((r) => r[0] === t); return x ? pill(x[1], x[2]) : ""; };
+export const REMARK_PHRASES = [
+  "Very attentive in class today", "Good participation and answers", "Homework done neatly", "Homework not done",
+  "Did not bring books / notebook", "Needs to improve handwriting", "Talking during the lesson", "Came late to class",
+  "Test preparation was good", "Needs more practice at home", "Well behaved and helpful", "Seemed tired / not focused today"
+];
+export async function remarksFor(sid) {
+  const r = await store.list("remarks", { studentId: sid }).catch(() => []);
+  return r.sort((a, b) => b.date.localeCompare(a.date) || String(b.at || "").localeCompare(String(a.at || "")));
+}
+export function remarkList(items, { showStudent = null } = {}) {
+  if (!items.length) return empty("No remarks yet", "note");
+  return `<ul class="list">${items.map((r) => `<li>${dayBox(r.date)}<div class="list__main">${showStudent ? `<b>${esc(showStudent(r))}</b>` : ""}${r.text ? `<div>${esc(r.text)}</div>` : ""}<div class="list__meta">${esc(r.teacherName || "Teacher")}${r.subject ? " · " + esc(r.subject) : ""} · ${fmtDate(r.date, false)}</div></div>${remarkTag(r.tag)}</li>`).join("")}</ul>`;
+}
+
+/* ==========================================================
    Student data bundle
    ========================================================== */
 export async function loadStudent(sid) {
@@ -74,12 +95,13 @@ export async function loadStudent(sid) {
     store.list("staff"),
     store.list("leaves", { personId: sid })
   ]);
+  const remarks = await remarksFor(sid);
   attendance.sort((a, b) => a.date.localeCompare(b.date));
   exams.sort((a, b) => a.date.localeCompare(b.date));
   fees.sort((a, b) => b.month.localeCompare(a.month));
   homework.sort((a, b) => b.date.localeCompare(a.date));
   leaves.sort((a, b) => b.from.localeCompare(a.from));
-  return { sid, student, attendance, exams, fees, homework, timetable, staff, leaves };
+  return { sid, student, attendance, exams, fees, homework, timetable, staff, leaves, remarks };
 }
 
 const unpaidTotal = (fees) => fees.filter((f) => f.status !== "paid").reduce((s, f) => s + f.amount + (feeState(f) === "overdue" ? LATE_FEE : 0), 0);
@@ -125,6 +147,7 @@ export function studentViews(getSid, { forParent = false, header = () => "" } = 
         ${card("Result trend", lineChart(trend), `<a href="#/results">Report cards</a>`)}
       </div>
       <div>
+        ${card("Teacher remarks", remarkList(b.remarks.slice(0, 3)), `<a href="#/remarks">All</a>`)}
         ${card("Homework", hwDue.length ? `<ul class="list">${hwDue.slice(0, 4).map((h) => `<li>${dayBox(h.due)}<div class="list__main"><b>${esc(h.subject)}</b>${esc(h.title)}<div class="list__meta">Due ${fmtDate(h.due, false)}</div></div></li>`).join("")}</ul>` : empty("No homework due", "book"), `<a href="#/homework">All</a>`)}
         ${card("Notices", noticeList(notices), `<a href="#/notices">All</a>`)}
       </div>
@@ -215,6 +238,20 @@ export function studentViews(getSid, { forParent = false, header = () => "" } = 
     $$("[data-ch]").forEach((btn) => (btn.onclick = () => showChallan(b.fees.find((f) => f.id === btn.dataset.ch), b.student)));
   }
 
+  async function remarks({ el }) {
+    const b = await loadStudent(getSid());
+    const month = today().slice(0, 7), mon = b.remarks.filter((r) => r.date.startsWith(month));
+    const n = (t) => mon.filter((r) => r.tag === t).length;
+    el.innerHTML = header() + `
+    <div class="grid grid--kpi">
+      ${kpi({ label: "Excellent this month", value: n("excellent"), ic: "star", tone: "green" })}
+      ${kpi({ label: "Good this month", value: n("good"), ic: "check" })}
+      ${kpi({ label: "Needs attention", value: n("attention"), sub: "This month", ic: "note", tone: n("attention") ? "red" : "green" })}
+    </div>
+    ${card(forParent ? `Teachers' daily remarks about ${b.student.name.split(" ")[0]}` : "Your teachers' daily remarks", remarkList(b.remarks))}
+    <p class="muted small" style="margin-top:12px">${forParent ? "Teachers write a short note after class. To reply, use “Message teachers”." : "Teachers write a short note after class. Keep up the good work!"}</p>`;
+  }
+
   async function leave({ el, user }) {
     const b = await loadStudent(getSid());
     el.innerHTML = header() + `<div class="grid grid--2">
@@ -238,7 +275,7 @@ export function studentViews(getSid, { forParent = false, header = () => "" } = 
     };
   }
 
-  return { home, attendance, results, timetable, homework, fees, leave };
+  return { home, attendance, results, timetable, homework, remarks, fees, leave };
 }
 
 export function showChallan(f, s) {

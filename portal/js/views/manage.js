@@ -5,7 +5,7 @@ import {
   $, $$, esc, icon, kpi, card, empty, pill, person, avatar, statusPill, bars, ring, toast, dialog, field, options, armed,
   fmtDate, fmtMonth, dayBox, money, pct, today, attendanceStats, examResult, classPositions, feeState, gradePill
 } from "../ui.js";
-import { timetableGrid, showChallan } from "./shared.js";
+import { timetableGrid, showChallan, remarksFor, remarkList, remarkTag, REMARK_TAGS } from "./shared.js";
 import { cardStatus } from "./idcard.js";
 
 const plusIcon = icon("plus").replace("<svg", '<svg width="18" height="18" fill="currentColor"');
@@ -82,7 +82,7 @@ export function studentsView({ canEdit }) {
 }
 
 async function studentCard(s) {
-  const [att, exams, fees] = await Promise.all([store.list("attendance", { classId: s.classId }), store.list("exams", { classId: s.classId }), store.list("fees", { studentId: s.id })]);
+  const [att, exams, fees, rem] = await Promise.all([store.list("attendance", { classId: s.classId }), store.list("exams", { classId: s.classId }), store.list("fees", { studentId: s.id }), remarksFor(s.id)]);
   const a = attendanceStats(att, s.id);
   exams.sort((x, y) => x.date.localeCompare(y.date));
   const due = fees.filter((f) => f.status !== "paid");
@@ -92,7 +92,9 @@ async function studentCard(s) {
     <div class="grid grid--kpi">${kpi({ label: "Attendance", value: a.total ? a.pct + "%" : "—", sub: `${a.A} absent of ${a.total}`, ic: "checklist", tone: a.pct >= 85 ? "green" : "red" })}
     ${kpi({ label: "Fee due", value: due.length ? money(due.reduce((x, f) => x + f.amount, 0)) : "Nil", sub: due.length ? due.map((f) => fmtMonth(f.month)).join(", ") : "All clear", ic: "money", tone: due.length ? "red" : "green" })}</div>
     <dl class="dl" style="margin-bottom:16px"><dt>Subjects</dt><dd>${esc(studentSubjects(s).join(", "))}</dd><dt>Monthly fee</dt><dd>${money(monthlyFee(s))}${customFee(s) ? ` ${pill("Special fee", "gold")} <span class="muted small">standard ${money(standardFee(s))}${s.feeNote ? " · " + esc(s.feeNote) : ""}</span>` : ""}</dd><dt>Father</dt><dd>${esc(s.fatherName)}</dd><dt>Phone</dt><dd>${esc(s.phone)}</dd><dt>Date of birth</dt><dd>${fmtDate(s.dob)}</dd><dt>Address</dt><dd>${esc(s.address)}</dd><dt>Admitted</dt><dd>${fmtDate(s.admissionDate)}</dd><dt>Parent login</dt><dd>${esc(s.parentId || "—")}</dd></dl>
-    <h3 style="font-size:1.05rem">Results</h3>
+    <h3 style="font-size:1.05rem">Teacher remarks</h3>
+    ${remarkList(rem.slice(0, 8))}
+    <h3 style="font-size:1.05rem;margin-top:16px">Results</h3>
     ${exams.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Exam</th><th class="num">Marks</th><th class="num">%</th><th class="center">Grade</th><th class="center">Position</th></tr></thead><tbody>${exams.map((e) => { const r = examResult(e, s.id); const { pos, list } = classPositions(e); return `<tr><td>${esc(e.name)} ${e.published ? "" : pill("Not published", "grey")}</td><td class="num">${r.got}/${r.max}</td><td class="num">${r.pct}</td><td class="center">${r.max ? gradePill(r.grade) : "—"}</td><td class="center">${pos[s.id] || "—"} / ${list.length}</td></tr>`; }).join("")}</tbody></table></div>` : empty("No exams yet")}`
   });
 }
@@ -161,6 +163,37 @@ function editStudent(s, all, parents, done) {
   };
   drawSubs(s.classId, s.subjects || (isNew ? [] : classById(s.classId)?.subjects));
   $("#s-class", d).onchange = (e) => { if (isNew) $("#s-roll", d).value = nextRoll(e.target.value); drawSubs(e.target.value, []); };
+}
+
+/* ==========================================================
+   Daily remarks — every teacher's remarks for a day
+   ========================================================== */
+export function remarksOverview() {
+  return async function remarksView({ el, params }) {
+    const date = params.d && params.d <= today() ? params.d : today();
+    const cls = params.c || "", tag = params.t || "";
+    const [list, students] = await Promise.all([store.list("remarks", { date }).catch(() => []), store.list("students")]);
+    const nm = (sid) => students.find((s) => s.id === sid);
+    const rows = list.filter((r) => (!cls || r.classId === cls) && (!tag || r.tag === tag))
+      .sort((a, b) => CLASSES.findIndex((c) => c.id === a.classId) - CLASSES.findIndex((c) => c.id === b.classId) || (nm(a.studentId)?.rollNo || 0) - (nm(b.studentId)?.rollNo || 0));
+    const n = (t) => list.filter((r) => r.tag === t).length;
+    el.innerHTML = `
+    <div class="toolbar">
+      ${field("rd", "Date", `<input id="rd" type="date" value="${date}" max="${today()}">`)}
+      ${field("rc", "Class", `<select id="rc">${classOpts(cls)}</select>`)}
+      ${field("rt", "Rating", `<select id="rt">${options([["", "All"], ...REMARK_TAGS.map(([k, l]) => [k, l])], tag)}</select>`)}
+    </div>
+    <div class="grid grid--kpi">
+      ${kpi({ label: "Remarks written", value: list.length, sub: fmtDate(date), ic: "note" })}
+      ${kpi({ label: "Excellent", value: n("excellent"), ic: "star", tone: "green" })}
+      ${kpi({ label: "Needs attention", value: n("attention"), ic: "clock", tone: n("attention") ? "red" : "green" })}
+    </div>
+    ${card(`${rows.length} remark${rows.length === 1 ? "" : "s"}`, rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Class</th><th>Rating</th><th>Remark</th><th>Teacher</th></tr></thead><tbody>
+      ${rows.map((r) => { const s = nm(r.studentId); return `<tr><td>${person(s?.name || r.studentId, r.studentId)}</td><td class="nowrap">${esc(shortName(r.classId))}</td><td>${remarkTag(r.tag) || "—"}</td><td>${esc(r.text || "")}</td><td class="small">${esc(r.teacherName || "")}${r.subject ? `<div class="muted">${esc(r.subject)}</div>` : ""}</td></tr>`; }).join("")}
+    </tbody></table></div>` : empty("No remarks for this day", "note"))}`;
+    const go = () => (location.hash = hashWith("remarks", { d: $("#rd").value, c: $("#rc").value, t: $("#rt").value }));
+    $("#rd").onchange = go; $("#rc").onchange = go; $("#rt").onchange = go;
+  };
 }
 
 /* ==========================================================
