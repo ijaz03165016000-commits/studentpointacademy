@@ -102,3 +102,8 @@ portal/
 classroom.html      public Online Classroom offer + enrolment form
 firestore.rules     security rules for website + portals
 ```
+
+## Passwords list (admin)
+
+- **Logins & passwords** now shows each login's password (admin only). Firebase can't reveal passwords, so the portal keeps its own copy in the `passwords` collection: saved when a login is created, when someone changes their password, and each time someone signs in.
+- **Re-publish `firestore.rules`** after this update (it adds the admin-only `passwords` collection). Until then the column shows "Rules not published".

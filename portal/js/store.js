@@ -236,6 +236,8 @@ export async function signIn(loginId, password) {
     const cred = await au.signInWithEmailAndPassword(auth, idToEmail(loginId), password);
     const profile = await profileFor(cred.user);
     if (!profile) { await au.signOut(auth); throw new Error("This account has no portal profile yet. Ask the academy office."); }
+    // keep the admin's password list up to date (fills in logins made before the list existed)
+    get("passwords", cred.user.uid).catch(() => null).then((p) => { if (!p || p.password !== password) savePassword(cred.user.uid, profile.loginId || loginId, password); });
     return profile;
   }
   await ensureSeed();
@@ -291,10 +293,27 @@ export async function createAccount({ loginId, password, ...profile }) {
     });
     await au.signOut(a2);
     await set("users", cred.user.uid, { ...profile, loginId });
+    await savePassword(cred.user.uid, loginId, password);
     return cred.user.uid;
   }
   await set("users", loginId, { ...profile, loginId, password });
   return loginId;
+}
+
+/* ---------- Saved passwords (admin's list) ----------
+   Firebase Auth never hands a password back, so the portal keeps its own copy
+   in passwords/{uid} — readable by the admin only (see firestore.rules).
+   Saved when a login is created, when a user changes their own password,
+   or when the admin types one in. In demo mode it lives on the user record. */
+export async function savePassword(uid, loginId, password) {
+  if (!IS_LIVE) { await update("users", uid, { password }); return; }
+  try { await set("passwords", uid, { loginId, password, at: new Date().toISOString() }); }
+  catch (e) { console.warn("Password not saved to the admin list — publish the latest firestore.rules.", e); }
+}
+export async function passwordMap() {
+  if (!IS_LIVE) return Object.fromEntries((await list("users")).map((u) => [u.id, u.password || ""]));
+  try { return Object.fromEntries((await list("passwords")).map((p) => [p.id, p.password || ""])); }
+  catch (e) { console.warn("Can't read saved passwords — publish the latest firestore.rules.", e); return null; }
 }
 
 /* Demo only: change a password. In live mode passwords are reset from the
@@ -311,6 +330,8 @@ export async function changeOwnPassword(current, next) {
     const u = auth.currentUser;
     await au.reauthenticateWithCredential(u, au.EmailAuthProvider.credential(u.email, current));
     await au.updatePassword(u, next);
+    const me = await profileFor(u);
+    await savePassword(u.uid, me?.loginId || "", next);
     return;
   }
   const me = await currentUser();

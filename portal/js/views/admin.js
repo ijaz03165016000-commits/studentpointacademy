@@ -55,7 +55,14 @@ async function home({ el }) {
 
 /* ---------------- Logins ---------------- */
 async function accounts({ el, params }) {
-  const users = await store.list("users");
+  const [users, pw] = await Promise.all([store.list("users"), store.passwordMap()]);
+  const hide = params.h === "1";
+  const pwCell = (u) => {
+    if (!pw) return `<span class="muted small">Rules not published</span>`;
+    const p = pw[u.id];
+    if (!p) return `<span class="muted small">Not saved</span> · <button class="linkbtn" data-rec="${esc(u.id)}">Enter</button>`;
+    return `<code class="pw">${hide ? "••••••" : esc(p)}</code> <button class="linkbtn" data-cp="${esc(u.id)}" title="Copy password">Copy</button>`;
+  };
   const role = params.r || "", q = (params.q || "").toLowerCase();
   const list = users.filter((u) => (!role || u.role === role) && (!q || `${u.name} ${u.loginId}`.toLowerCase().includes(q)))
     .sort((a, b) => Object.keys(ROLES).indexOf(a.role) - Object.keys(ROLES).indexOf(b.role) || a.loginId.localeCompare(b.loginId));
@@ -63,18 +70,29 @@ async function accounts({ el, params }) {
     ${field("aq", "Search", `<input id="aq" type="search" value="${esc(params.q || "")}" placeholder="Name or login ID">`)}
     ${field("ar", "Role", `<select id="ar"><option value="">All roles</option>${options(Object.entries(ROLES).map(([k, v]) => [k, v.label]), role)}</select>`)}
     <span class="toolbar__spacer"></span>
+    <button class="btn btn--outline btn--sm" id="hidePw">${hide ? "Show passwords" : "Hide passwords"}</button>
     <button class="btn btn--gold btn--sm" id="addU">${icon("plus").replace("<svg", '<svg width="18" height="18" fill="currentColor"')} Principal / admin login</button></div>
-  ${card(`${list.length} logins`, `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Login ID</th><th>Role</th><th>Linked to</th><th>Status</th><th></th></tr></thead><tbody>
-    ${list.slice(0, 300).map((u) => `<tr><td>${person(u.name)}</td><td class="nowrap"><code>${esc(u.loginId)}</code></td><td>${pill(ROLES[u.role]?.label || u.role, u.role === "admin" || u.role === "principal" ? "gold" : "")}</td>
+  ${card(`${list.length} logins`, `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Login ID</th><th>Password</th><th>Role</th><th>Linked to</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.slice(0, 300).map((u) => `<tr><td>${person(u.name)}</td><td class="nowrap"><code>${esc(u.loginId)}</code></td><td class="nowrap">${pwCell(u)}</td><td>${pill(ROLES[u.role]?.label || u.role, u.role === "admin" || u.role === "principal" ? "gold" : "")}</td>
       <td class="small">${u.role === "parent" ? esc((u.children || []).join(", ")) : u.role === "student" ? esc(className(u.classId)) : esc(u.linkId || "—")}</td>
       <td>${u.disabled ? pill("Off", "red") : pill("Active", "green")}</td>
       <td class="nowrap"><button class="linkbtn" data-pw="${esc(u.id)}">Reset password</button>${u.id !== me.id ? ` · <button class="linkbtn${u.disabled ? "" : " linkbtn--danger"}" data-tg="${esc(u.id)}">${u.disabled ? "Turn on" : "Turn off"}</button>` : ""}</td></tr>`).join("")}
   </tbody></table></div>`)}
-  <p class="muted small" style="margin-top:12px">Student, parent and staff logins are created when you add a student or staff member. ${store.IS_LIVE ? "Turning a login off blocks the portal; to delete it completely, also remove the user in Firebase console → Authentication." : ""}</p>`;
+  <p class="muted small" style="margin-top:12px">Only the admin can see this page's passwords. Passwords are saved when a login is created or when its owner changes it. ${store.IS_LIVE ? "Older logins show “Not saved” until that person signs in once — their password is then filled in automatically. You can also press “Enter” to type it in yourself. " : ""}Student, parent and staff logins are created when you add a student or staff member. ${store.IS_LIVE ? "Turning a login off blocks the portal; to delete it completely, also remove the user in Firebase console → Authentication." : ""}</p>`;
   let t; $("#aq").oninput = (e) => { clearTimeout(t); t = setTimeout(() => (location.hash = `#/accounts?q=${encodeURIComponent(e.target.value)}&r=${$("#ar").value}`), 350); };
   $("#ar").onchange = (e) => (location.hash = `#/accounts?q=${encodeURIComponent($("#aq").value)}&r=${e.target.value}`);
   if (params.q) { const i = $("#aq"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
   const reload = () => accounts({ el, params });
+  $("#hidePw").onclick = () => (location.hash = `#/accounts?q=${encodeURIComponent($("#aq").value)}&r=${$("#ar").value}${hide ? "" : "&h=1"}`);
+  $$("[data-cp]").forEach((b) => (b.onclick = async () => { try { await navigator.clipboard.writeText(pw[b.dataset.cp]); toast("Password copied"); } catch { toast(pw[b.dataset.cp]); } }));
+  $$("[data-rec]").forEach((b) => (b.onclick = () => {
+    const u = users.find((x) => x.id === b.dataset.rec);
+    dialog({
+      title: "Save password — " + u.name, submit: "Save",
+      body: `${field("rp", "Password for " + esc(u.loginId), `<input id="rp" name="pw" required minlength="6" autocomplete="off">`)}<p class="muted small">This only saves the password in this list so you can see it. It does not change ${esc(u.name)}'s login — if you don't know the password, first reset it in <b>Firebase console → Authentication → Users</b> (<code>${esc(store.idToEmail(u.loginId))}</code>), then type the new one here.</p>`,
+      onSubmit: async (f) => { await store.savePassword(u.id, u.loginId, f.pw.value); toast("Password saved"); reload(); }
+    });
+  }));
   $$("[data-tg]").forEach((b) => (b.onclick = () => armed(b, async () => { const u = users.find((x) => x.id === b.dataset.tg); await store.update("users", u.id, { disabled: !u.disabled }); toast(u.disabled ? "Login turned on" : "Login turned off"); reload(); }, "Sure?")));
   $$("[data-pw]").forEach((b) => (b.onclick = () => {
     const u = users.find((x) => x.id === b.dataset.pw);
@@ -85,7 +103,7 @@ async function accounts({ el, params }) {
     dialog({
       title: "Reset password — " + u.name, submit: "Set password",
       body: field("np", "New password", `<input id="np" name="pw" required minlength="6" value="${Math.random().toString(36).slice(2, 8)}"><div class="field__hint">Give this to ${esc(u.name)}. They can change it from their profile.</div>`),
-      onSubmit: async (f) => { if (f.pw.value.length < 6) throw new Error("At least 6 characters."); await store.setDemoPassword(u.id, f.pw.value); toast("Password changed"); }
+      onSubmit: async (f) => { if (f.pw.value.length < 6) throw new Error("At least 6 characters."); await store.setDemoPassword(u.id, f.pw.value); toast("Password changed"); reload(); }
     });
   }));
   $("#addU").onclick = () => dialog({
