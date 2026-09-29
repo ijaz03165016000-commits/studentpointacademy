@@ -320,10 +320,24 @@ export function messagesView({ side }) {  // side: "parent" | "staff"
     let contacts = [];
     if (side === "parent") {
       const kids = students.filter((s) => (user.children || []).includes(s.id));
-      kids.forEach((k) => staff.filter((t) => (t.classIds || []).includes(k.classId) || t.classTeacherOf === k.classId).forEach((t) => {
-        const tk = user.id + "|" + t.id + "|" + k.id;
-        contacts.push({ key: tk, title: t.name, sub: `${t.subjects.join(", ")}${t.classTeacherOf === k.classId ? " · Class teacher" : ""} — about ${k.name.split(" ")[0]}`, parentId: user.id, staffId: t.id, studentId: k.id });
-      }));
+      kids.forEach((k) => {
+        // one row per teacher per child — if the same teacher was added twice in Staff,
+        // keep the entry that already has messages (else the first one)
+        const seen = new Map();
+        staff.filter((t) => (t.classIds || []).includes(k.classId) || t.classTeacherOf === k.classId).forEach((t) => {
+          const tk = user.id + "|" + t.id + "|" + k.id;
+          const nameKey = String(t.name || t.id).trim().toLowerCase();
+          const prev = seen.get(nameKey);
+          if (prev && (threads[prev.key] || !threads[tk])) { if (t.classTeacherOf === k.classId) prev.ct = true; return; }
+          const c = { key: tk, title: t.name, subjects: (t.subjects || []).filter(Boolean), ct: t.classTeacherOf === k.classId || prev?.ct, kid: k, parentId: user.id, staffId: t.id, studentId: k.id };
+          if (prev) contacts.splice(contacts.indexOf(prev), 1, c); else contacts.push(c);
+          seen.set(nameKey, c);
+        });
+      });
+      contacts.forEach((c) => {
+        const role = [c.subjects.join(", "), c.ct ? "Class teacher" : ""].filter(Boolean).join(" · ") || "Teacher";
+        c.sub = `For ${c.kid.name} (${className(c.kid.classId)}) · ${role}`;
+      });
     } else {
       Object.keys(threads).forEach((k) => {
         const [pid, , sidd] = k.split("|"); const st = students.find((s) => s.id === sidd); const p = parents.find((x) => x.id === pid);
