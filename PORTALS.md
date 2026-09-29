@@ -10,7 +10,7 @@ Five portals share one sign-in page at **`www.studentpointacademy.online/portal/
 | **Principal** | principal | Academy overview, attendance by class, staff attendance, publish results, fee collection, staff leave approvals, notices |
 | **Admin** | academy office | Add/edit students & tutors (creates their logins), fee challans & payments, timetables, notices, portal subscriptions |
 
-Built by Ijaz Software House · www.ijazs.online
+Built by Ijaz Software House · 0092-344-0807888 / 0092-316-9334525 · www.ijazs.online
 
 ## Classes and fees (set in `portal/js/school.js`)
 

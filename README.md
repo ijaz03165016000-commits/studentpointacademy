@@ -1,6 +1,6 @@
 # Student Point Academy — website
 
-www.studentpointacademy.online · Powered by Ijaz Software House
+www.studentpointacademy.online · Powered by Ijaz Software House · 0092-344-0807888 / 0092-316-9334525 · www.ijazs.online
 
 The website uses the same backend as the STARs College site: announcements, articles, an admin panel, and form entries saved to a database. The theme and design are the same as before.
 
