@@ -70,8 +70,16 @@ export const studentSubjects = (st) => {
   return own.length ? own : (c?.subjects || []);
 };
 
-/* Monthly fee (PKR) for one student */
+/* A special monthly fee the office set by hand for one student (e.g. extra
+   attention, or a concession). Empty / 0 means "use the standard fee". */
+export const customFee = (st) => { const n = Number(st?.customFee); return n > 0 ? Math.round(n) : 0; };
+
+/* Monthly fee (PKR) for one student — the special fee if one is set */
 export function monthlyFee(st) {
+  return customFee(st) || standardFee(st);
+}
+/* Standard fee from the class / subjects, ignoring any special fee */
+export function standardFee(st) {
   const c = classById(st?.classId); if (!c) return 0;
   if (c.courseFee) return Math.round(c.courseFee / c.months);
   const b = BANDS[c.band];
@@ -79,6 +87,8 @@ export function monthlyFee(st) {
 }
 const rs = (n) => "Rs. " + Number(n).toLocaleString("en-PK");
 export function feeLabel(st) {
+  /* the office's reason (feeNote) stays private — it is never printed on the challan */
+  if (customFee(st)) return "Monthly tuition fee";
   const c = classById(st?.classId); if (!c) return "Tuition fee";
   if (c.courseFee) return c.months > 1 ? `Course fee — instalment (${rs(c.courseFee)} ÷ ${c.months} months)` : "Course fee";
   const b = BANDS[c.band];

@@ -1,6 +1,6 @@
 /* Management views shared by the Principal and Admin portals */
 import * as store from "../store.js";
-import { CLASSES, classById, className, shortName, bandLabel, monthlyFee, feeLabel, studentSubjects, FEE_SUMMARY, FEE_DUE_DAY, LATE_FEE, DAYS, PERIODS } from "../school.js";
+import { CLASSES, classById, className, shortName, bandLabel, monthlyFee, standardFee, customFee, feeLabel, studentSubjects, FEE_SUMMARY, FEE_DUE_DAY, LATE_FEE, DAYS, PERIODS } from "../school.js";
 import {
   $, $$, esc, icon, kpi, card, empty, pill, person, avatar, statusPill, bars, ring, toast, dialog, field, options, armed,
   fmtDate, fmtMonth, dayBox, money, pct, today, attendanceStats, examResult, classPositions, feeState, gradePill
@@ -65,8 +65,8 @@ export function studentsView({ canEdit }) {
       <span class="toolbar__spacer"></span>
       ${canEdit ? `<button class="btn btn--gold btn--sm" id="addS">${plusIcon} Add student</button>` : ""}
     </div>
-    ${card(`${list.length} student${list.length === 1 ? "" : "s"}${cls ? " in " + className(cls) : ""}`, list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Class</th><th>Roll</th><th>Father</th><th>Phone</th><th>Status</th><th>ID card</th><th></th></tr></thead><tbody>
-      ${list.slice(0, 300).map((s) => `<tr><td>${person(s.name, s.id)}</td><td class="nowrap">${esc(className(s.classId))}</td><td>${s.rollNo}</td><td>${esc(s.fatherName)}</td><td class="nowrap">${esc(s.phone)}</td><td>${s.status === "left" ? pill("Left", "grey") : pill("Active", "green")}</td><td>${cardStatus("student", s)}</td>
+    ${card(`${list.length} student${list.length === 1 ? "" : "s"}${cls ? " in " + className(cls) : ""}`, list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Class</th><th>Roll</th><th>Father</th><th>Phone</th><th class="num">Monthly fee</th><th>Status</th><th>ID card</th><th></th></tr></thead><tbody>
+      ${list.slice(0, 300).map((s) => `<tr><td>${person(s.name, s.id)}</td><td class="nowrap">${esc(className(s.classId))}</td><td>${s.rollNo}</td><td>${esc(s.fatherName)}</td><td class="nowrap">${esc(s.phone)}</td><td class="num nowrap">${money(monthlyFee(s))}${customFee(s) ? `<div>${pill("Special", "gold")}</div>` : ""}</td><td>${s.status === "left" ? pill("Left", "grey") : pill("Active", "green")}</td><td>${cardStatus("student", s)}</td>
         <td class="nowrap"><button class="linkbtn" data-view="${esc(s.id)}">View</button>${canEdit ? ` · <button class="linkbtn" data-edit="${esc(s.id)}">Edit</button>` : ""} · <a href="#/idcard?kind=student&id=${encodeURIComponent(s.id)}">Card</a></td></tr>`).join("")}
     </tbody></table></div>` : empty("No students match", "search"))}`;
     let t; $("#sq").oninput = (e) => { clearTimeout(t); t = setTimeout(() => (location.hash = hashWith("students", { q: e.target.value, c: $("#sc").value })), 350); };
@@ -91,7 +91,7 @@ async function studentCard(s) {
     body: `<div class="profile-top" style="margin-bottom:16px">${avatar(s.name, "avatar--lg")}<div><b style="color:var(--navy);font-size:1.15rem">${esc(s.name)}</b><div class="muted">${esc(s.id)} · ${esc(className(s.classId))} · Roll ${s.rollNo}</div></div></div>
     <div class="grid grid--kpi">${kpi({ label: "Attendance", value: a.total ? a.pct + "%" : "—", sub: `${a.A} absent of ${a.total}`, ic: "checklist", tone: a.pct >= 85 ? "green" : "red" })}
     ${kpi({ label: "Fee due", value: due.length ? money(due.reduce((x, f) => x + f.amount, 0)) : "Nil", sub: due.length ? due.map((f) => fmtMonth(f.month)).join(", ") : "All clear", ic: "money", tone: due.length ? "red" : "green" })}</div>
-    <dl class="dl" style="margin-bottom:16px"><dt>Subjects</dt><dd>${esc(studentSubjects(s).join(", "))}</dd><dt>Monthly fee</dt><dd>${money(monthlyFee(s))}</dd><dt>Father</dt><dd>${esc(s.fatherName)}</dd><dt>Phone</dt><dd>${esc(s.phone)}</dd><dt>Date of birth</dt><dd>${fmtDate(s.dob)}</dd><dt>Address</dt><dd>${esc(s.address)}</dd><dt>Admitted</dt><dd>${fmtDate(s.admissionDate)}</dd><dt>Parent login</dt><dd>${esc(s.parentId || "—")}</dd></dl>
+    <dl class="dl" style="margin-bottom:16px"><dt>Subjects</dt><dd>${esc(studentSubjects(s).join(", "))}</dd><dt>Monthly fee</dt><dd>${money(monthlyFee(s))}${customFee(s) ? ` ${pill("Special fee", "gold")} <span class="muted small">standard ${money(standardFee(s))}${s.feeNote ? " · " + esc(s.feeNote) : ""}</span>` : ""}</dd><dt>Father</dt><dd>${esc(s.fatherName)}</dd><dt>Phone</dt><dd>${esc(s.phone)}</dd><dt>Date of birth</dt><dd>${fmtDate(s.dob)}</dd><dt>Address</dt><dd>${esc(s.address)}</dd><dt>Admitted</dt><dd>${fmtDate(s.admissionDate)}</dd><dt>Parent login</dt><dd>${esc(s.parentId || "—")}</dd></dl>
     <h3 style="font-size:1.05rem">Results</h3>
     ${exams.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Exam</th><th class="num">Marks</th><th class="num">%</th><th class="center">Grade</th><th class="center">Position</th></tr></thead><tbody>${exams.map((e) => { const r = examResult(e, s.id); const { pos, list } = classPositions(e); return `<tr><td>${esc(e.name)} ${e.published ? "" : pill("Not published", "grey")}</td><td class="num">${r.got}/${r.max}</td><td class="num">${r.pct}</td><td class="center">${r.max ? gradePill(r.grade) : "—"}</td><td class="center">${pos[s.id] || "—"} / ${list.length}</td></tr>`; }).join("")}</tbody></table></div>` : empty("No exams yet")}`
   });
@@ -115,6 +115,8 @@ function editStudent(s, all, parents, done) {
       ${field("s-adm", "Admission date", `<input id="s-adm" name="admissionDate" type="date" value="${esc(s.admissionDate || "")}">`)}
       ${field("s-addr", "Address", `<input id="s-addr" name="address" value="${esc(s.address || "")}">`, "full")}
       <fieldset class="full" style="border:0;padding:0;margin:0"><legend style="font-weight:700;color:var(--navy);margin-bottom:6px">Subjects taken <span class="muted small" id="s-feeinfo"></span></legend><div id="s-subs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px"></div></fieldset>
+      ${field("s-fee", "Special monthly fee (Rs.)", `<input id="s-fee" name="customFee" type="number" min="0" step="50" inputmode="numeric" value="${customFee(s) || ""}"><div class="field__hint" id="s-feehint">Leave empty to charge the standard fee.</div>`)}
+      ${field("s-feenote", "Reason (office only)", `<input id="s-feenote" name="feeNote" maxlength="120" placeholder="e.g. needs special attention / fee concession" value="${esc(s.feeNote || "")}"><div class="field__hint">Not shown to the student or parent.</div>`)}
       ${isNew ? `
       ${field("s-id", "Student ID (login)", `<input id="s-id" name="sid" required placeholder="e.g. SPA-0101" value="${nextSid()}" style="text-transform:uppercase"><div class="field__hint">Used to sign in. Can't be changed later.</div>`)}
       ${field("s-pw", "Student password", `<input id="s-pw" name="pw" required minlength="6" value="${Math.random().toString(36).slice(2, 8)}"><div class="field__hint">Give this to the student. At least 6 characters.</div>`)}
@@ -122,7 +124,7 @@ function editStudent(s, all, parents, done) {
       ` : field("s-status", "Status", `<select id="s-status" name="status">${options([["active", "Active"], ["left", "Left the academy"]], s.status)}</select>`)}
     </div>`,
     onSubmit: async (f) => {
-      const data = { subjects: $$("input[name=subj]:checked", f).map((i) => i.value), name: f.name.value.trim(), fatherName: f.fatherName.value.trim(), classId: f.classId.value, rollNo: Number(f.rollNo.value), gender: f.gender.value, dob: f.dob.value, phone: f.phone.value.trim(), admissionDate: f.admissionDate.value, address: f.address.value.trim() };
+      const data = { subjects: $$("input[name=subj]:checked", f).map((i) => i.value), name: f.name.value.trim(), fatherName: f.fatherName.value.trim(), classId: f.classId.value, rollNo: Number(f.rollNo.value), gender: f.gender.value, dob: f.dob.value, phone: f.phone.value.trim(), admissionDate: f.admissionDate.value, address: f.address.value.trim(), customFee: Math.max(0, Math.round(Number(f.customFee.value) || 0)), feeNote: f.customFee.value && Number(f.customFee.value) > 0 ? f.feeNote.value.trim() : "" };
       if (!data.subjects.length) throw new Error("Tick at least one subject.");
       if (data.phone && !/^03\d{2}-?\d{7}$/.test(data.phone)) throw new Error("Phone should look like 03XX-XXXXXXX.");
       if (isNew) {
@@ -154,7 +156,7 @@ function editStudent(s, all, parents, done) {
   const drawSubs = (cid, keep) => {
     const c = classById(cid); const cur = keep && keep.length ? keep : (c.subjects.length <= 1 ? c.subjects : []);
     $("#s-subs", d).innerHTML = c.subjects.map((x) => `<label><input type="checkbox" name="subj" value="${esc(x)}"${cur.includes(x) ? " checked" : ""}> ${esc(x)}</label>`).join("");
-    const info = () => { const n = $$("input[name=subj]:checked", d).map((i) => i.value); $("#s-feeinfo", d).textContent = n.length ? "· " + money(monthlyFee({ classId: cid, subjects: n })) + " / month" : ""; };
+    const info = () => { const n = $$("input[name=subj]:checked", d).map((i) => i.value); const std = standardFee({ classId: cid, subjects: n }); $("#s-feeinfo", d).textContent = n.length ? "· standard " + money(std) + " / month" : ""; $("#s-fee", d).placeholder = n.length ? "Standard: " + std : ""; $("#s-feehint", d).textContent = n.length ? `Leave empty to charge the standard ${money(std)}. Type any amount (e.g. 5000 or 2000) to set a special fee.` : "Leave empty to charge the standard fee."; };
     $$("input[name=subj]", d).forEach((i) => (i.onchange = info)); info();
   };
   drawSubs(s.classId, s.subjects || (isNew ? [] : classById(s.classId)?.subjects));
@@ -279,8 +281,8 @@ export function feesView({ canEdit }) {
       ${kpi({ label: "Challans issued", value: list.length, sub: fmtMonth(month), ic: "book" })}
     </div>
     ${card(`${fmtMonth(month)} — ${rows.length} challans`, rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Class</th><th class="num">Amount</th><th>Status</th><th>Paid on</th><th></th></tr></thead><tbody>
-      ${rows.slice(0, 400).map((f) => { const s = nm(f.studentId); return `<tr><td>${person(s?.name || f.studentId, f.studentId + (s?.phone ? " · " + s.phone : ""))}</td><td class="nowrap">${esc(shortName(f.classId))}</td><td class="num">${money(f.amount)}</td><td>${statusPill(feeState(f))}</td><td class="nowrap">${f.paidOn ? fmtDate(f.paidOn) : "—"}</td>
-        <td class="nowrap"><button class="linkbtn" data-ch="${esc(f.id)}">${f.status === "paid" ? "Receipt" : "Challan"}</button>${canEdit ? (f.status === "paid" ? ` · <button class="linkbtn linkbtn--danger" data-undo="${esc(f.id)}">Undo</button>` : ` · <button class="linkbtn" data-pay="${esc(f.id)}">Mark paid</button>`) : ""}</td></tr>`; }).join("")}
+      ${rows.slice(0, 400).map((f) => { const s = nm(f.studentId); return `<tr><td>${person(s?.name || f.studentId, f.studentId + (s?.phone ? " · " + s.phone : ""))}</td><td class="nowrap">${esc(shortName(f.classId))}</td><td class="num nowrap">${money(f.amount)}${s && f.amount !== standardFee(s) ? `<div>${pill("Special", "gold")}</div>` : ""}</td><td>${statusPill(feeState(f))}</td><td class="nowrap">${f.paidOn ? fmtDate(f.paidOn) : "—"}</td>
+        <td class="nowrap"><button class="linkbtn" data-ch="${esc(f.id)}">${f.status === "paid" ? "Receipt" : "Challan"}</button>${canEdit ? (f.status === "paid" ? ` · <button class="linkbtn linkbtn--danger" data-undo="${esc(f.id)}">Undo</button>` : ` · <button class="linkbtn" data-amt="${esc(f.id)}">Edit fee</button> · <button class="linkbtn" data-pay="${esc(f.id)}">Mark paid</button>`) : ""}</td></tr>`; }).join("")}
     </tbody></table></div>` : empty(list.length ? "No challans match the filter" : "No challans for this month yet" + (canEdit ? " — use “Generate challans”." : "."), "money"))}`;
     const go = () => (location.hash = hashWith("fees", { m: $("#fm").value, c: $("#fc").value, s: $("#fs").value }));
     $("#fm").onchange = go; $("#fc").onchange = go; $("#fs").onchange = go;
@@ -295,6 +297,22 @@ export function feesView({ canEdit }) {
           ${field("p-amt", "Amount received (Rs.)", `<input id="p-amt" name="amount" type="number" value="${f.amount + late}" required>`)}
           ${field("p-rc", "Receipt no.", `<input id="p-rc" name="receipt" value="RC-${Date.now().toString().slice(-6)}" required>`, "full")}</div>`,
         onSubmit: async (fm) => { await store.update("fees", f.id, { status: "paid", paidOn: fm.paidOn.value, receiptNo: fm.receipt.value.trim(), received: Number(fm.amount.value) }); toast("Payment recorded"); reload(); }
+      });
+    }));
+    $$("[data-amt]").forEach((b) => (b.onclick = () => {
+      const f = list.find((x) => x.id === b.dataset.amt); const s = nm(f.studentId);
+      dialog({
+        title: "Edit fee — " + (s?.name || f.studentId), submit: "Save fee",
+        body: `<div class="form">${field("e-amt", `Fee for ${fmtMonth(f.month)} (Rs.)`, `<input id="e-amt" name="amount" type="number" min="0" step="50" value="${f.amount}" required>${s ? `<div class="field__hint">Standard fee: ${money(standardFee(s))}${customFee(s) ? ` · current special fee: ${money(customFee(s))}` : ""}</div>` : ""}`)}
+          ${field("e-note", "Reason (office only)", `<input id="e-note" name="note" maxlength="120" placeholder="e.g. special attention / concession" value="${esc(s?.feeNote || "")}">`)}
+          ${s ? `<label class="full" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" name="keep" checked style="margin-top:4px"> <span>Use this amount every month for ${esc(s.name)} (saves it in the student's record, so new challans use it too)</span></label>` : ""}</div>`,
+        onSubmit: async (fm) => {
+          const amount = Math.max(0, Math.round(Number(fm.amount.value) || 0));
+          const std = s ? standardFee(s) : amount;
+          await store.update("fees", f.id, { amount, items: [{ label: amount === std ? feeLabel({ ...s, customFee: 0 }) : "Monthly tuition fee", amount }] });
+          if (s && fm.keep?.checked) await store.update("students", s.id, amount === std ? { customFee: 0, feeNote: "" } : { customFee: amount, feeNote: fm.note.value.trim() });
+          toast("Fee updated"); reload();
+        }
       });
     }));
     $$("[data-undo]").forEach((b) => (b.onclick = () => armed(b, async () => { await store.update("fees", b.dataset.undo, { status: "unpaid", paidOn: "", receiptNo: "" }); toast("Marked as not paid"); reload(); }, "Undo payment?")));
