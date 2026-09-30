@@ -1088,3 +1088,33 @@ font-size: 15px; text-align: center; margin-top: 12px; align-items: center; just
   .nav-links, .nav-actions { display: none; }
   .hamburger { display: flex; }
 }
+
+/* ==========================================================
+   Mobile: stop sections spilling past the screen edge
+   Grid columns stretched to their widest item (forms, pay
+   card, long buttons) so pages scrolled sideways on phones.
+   ========================================================== */
+html { overflow-x: clip; }
+.demo-inner > *, .contact-grid > *, .pay-grid > *, .join-form-wrap > *,
+.about-grid > *, .portal-grid > *, .footer-grid > *, .hero-inner > *, .form-grid > * { min-width: 0; }
+input, select, textarea { max-width: 100%; }
+.programs-grid, .testi-grid, .join-grid { grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); }
+.courses-grid { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
+.age-grid, .why-grid { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); }
+.slots-grid, .pricing-grid { grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); }
+.charts-grid { grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); }
+.footer-bottom-links { flex-wrap: wrap; row-gap: 6px; }
+@media (max-width: 768px) {
+  .section-title, .section-subtitle, .pay-card, .contact-info, .demo-form-card { overflow-wrap: anywhere; }
+}
+@media (max-width: 480px) {
+  .btn { white-space: normal; text-align: center; justify-content: center; }
+  .ish-credit, .ish-credit a { white-space: normal !important; }
+}
+@media (max-width: 380px) {
+  .nav-logo { gap: 8px; min-width: 0; }
+  .nav-logo-icon { width: 38px; height: 38px; font-size: 17px; border-radius: 10px; }
+  .nav-logo-text { font-size: 15px; min-width: 0; }
+  .nav-logo-text span { font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hamburger { flex-shrink: 0; }
+}
