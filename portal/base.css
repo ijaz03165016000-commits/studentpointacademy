@@ -580,3 +580,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .portal-card span.go { font-weight: 700; color: var(--navy-3); font-size: .92rem; margin-top: 4px; }
 @media (max-width: 1080px) { .portal-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 640px) { .portal-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .portal-card { padding: 16px 14px; } }
+
+/* Floating WhatsApp — safe areas + smaller on phones */
+.wa-float { right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); border: 3px solid #fff; box-sizing: border-box; }
+@media (max-width: 768px) { .wa-float { width: 52px; height: 52px; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); border-width: 2px; } .wa-float svg { width: 26px; height: 26px; } }

@@ -1014,3 +1014,77 @@ font-size: 15px; text-align: center; margin-top: 12px; align-items: center; just
 .wallets { display: flex; flex-wrap: wrap; gap: 6px; }
 .wallets .w { font-weight: 800; font-size: 13px; padding: 5px 11px; border-radius: 50px; background: #fff; }
 .w--naya { color: #E4572E; } .w--sada { color: #0F9D8A; } .w--ep { color: #16A34A; } .w--jc { color: #B91C1C; }
+
+/* ==========================================================
+   Floating WhatsApp button — responsive fix
+   • ring pulse no longer scales the button (no jumpy / clipped edge)
+   • respects phone safe areas (notch / home bar)
+   • smaller on tablets and phones so it covers less content
+   • footer gets extra space at the bottom so the button
+     never sits on top of the last line of text
+   ========================================================== */
+@keyframes wa-ring {
+  0%   { box-shadow: 0 6px 20px rgba(0,0,0,.18), 0 0 0 0 rgba(37,211,102,.55); }
+  70%  { box-shadow: 0 6px 20px rgba(0,0,0,.18), 0 0 0 12px rgba(37,211,102,0); }
+  100% { box-shadow: 0 6px 20px rgba(0,0,0,.18), 0 0 0 0 rgba(37,211,102,0); }
+}
+.wa-float {
+  --wa-size: 60px;
+  --wa-gap: 24px;
+  width: var(--wa-size); height: var(--wa-size);
+  right: calc(var(--wa-gap) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--wa-gap) + env(safe-area-inset-bottom, 0px));
+  line-height: 1; font-size: calc(var(--wa-size) * .5);
+  border: 3px solid #fff;
+  box-sizing: border-box; overflow: visible;
+  animation: wa-ring 2.2s ease-out infinite;
+  transform: none; will-change: box-shadow;
+  -webkit-tap-highlight-color: transparent;
+}
+.wa-float i { display: block; line-height: 1; }
+.wa-float:hover, .wa-float:focus-visible { transform: translateY(-3px); background: #20BA5A; }
+.wa-float:focus-visible { outline: 3px solid rgba(37,211,102,.45); outline-offset: 3px; }
+.wa-float-label { right: calc(100% + 12px); top: 50%; transform: translateY(-50%); }
+.footer { padding-bottom: 0; }
+.footer-bottom { padding-bottom: calc(20px + var(--wa-space, 84px)); }
+
+@media (max-width: 1024px) {
+  .wa-float { --wa-size: 56px; --wa-gap: 20px; }
+}
+@media (max-width: 768px) {
+  .wa-float { --wa-size: 52px; --wa-gap: 16px; border-width: 2px; }
+  .wa-float-label { display: none; }
+  .footer-bottom { --wa-space: 76px; }
+}
+@media (max-width: 400px) {
+  .wa-float { --wa-size: 48px; --wa-gap: 14px; }
+}
+@media (hover: none) {
+  .wa-float-label { display: none; }
+  .wa-float:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-float { animation: none; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+}
+@media print { .wa-float { display: none !important; } }
+
+/* ==========================================================
+   Header menu — fit on laptop / desktop screens
+   The 10 menu links + buttons were wider than the page on
+   1280–1440px screens, pushing the page sideways. Tighter
+   links, an icon-only WhatsApp button, and the ☰ menu up to
+   1240px keep everything inside the page at every width.
+   ========================================================== */
+@media (min-width: 1025px) {
+  .nav-inner { gap: 10px; }
+  .nav-links { gap: 1px; }
+  .nav-links a { padding: 8px 7px; font-size: 13px; }
+  .nav-actions { flex-shrink: 0; }
+  .nav-wa { font-size: 0; gap: 0; width: 40px; height: 40px; padding: 0; justify-content: center; flex-shrink: 0; }
+  .nav-wa i { font-size: 20px; }
+  .nav-demo { white-space: nowrap; padding: 9px 14px; }
+}
+@media (max-width: 1240px) {
+  .nav-links, .nav-actions { display: none; }
+  .hamburger { display: flex; }
+}
